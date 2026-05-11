@@ -1,0 +1,29 @@
+# Godot
+.godot/
+*.translation
+*.remap
+*.import
+user_cache/
+
+# C#
+bin/
+obj/
+*.csproj.user
+*.sln
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Archives
+*.zip
+*.tar
+*.rar
+*.7z
