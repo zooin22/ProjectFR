@@ -8,14 +8,21 @@ config_version=5
 [application]
 
 config/name="ProjectFR"
+config/version="1.0"
 config/description="A filesystem-based roguelike game in Godot 4.6.2"
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.6", "C#", "Forward Plus")
 config/icon="res://icon.svg"
+config/quit_on_go_back=true
 
 [dotnet]
 
 project/assembly_name="ProjectFR"
+
+[rendering]
+
+renderer/rendering_method="forward_plus"
+renderer/textures/vram_compression/import_etc2_astc=true
 
 [input]
 
