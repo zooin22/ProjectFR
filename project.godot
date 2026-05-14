@@ -1,64 +1,29 @@
 ; Engine configuration file.
 ; It's best edited using the editor UI and not directly,
-; since the parameters that go in here are very specific to each scene and
-; its environment.
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
 
 config_version=5
 
 [application]
 
 config/name="ProjectFR"
-config/version="1.0"
-config/description="A filesystem-based roguelike game in Godot 4.6.2"
-run/main_scene="res://scenes/main.tscn"
-config/features=PackedStringArray("4.6", "C#", "Forward Plus")
+config/features=PackedStringArray("4.6", "C#", "GL Compatibility")
 config/icon="res://icon.svg"
-config/quit_on_go_back=true
 
 [dotnet]
 
 project/assembly_name="ProjectFR"
 
+[physics]
+
+3d/physics_engine="Jolt Physics"
+
 [rendering]
 
-renderer/rendering_method="forward_plus"
-renderer/textures/vram_compression/import_etc2_astc=true
-
-[input]
-
-ui_open={
-"deadzone": 0.5,
-"events": [Key(keycode=4194309)]
-}
-ui_inspect={
-"deadzone": 0.5,
-"events": [InputEventKey(keycode=4194309, shift_pressed=true)]
-}
-ui_delete={
-"deadzone": 0.5,
-"events": [Key(keycode=4194255)]
-}
-ui_copy={
-"deadzone": 0.5,
-"events": [InputEventKey(keycode=67, ctrl_pressed=true)]
-}
-ui_cut={
-"deadzone": 0.5,
-"events": [InputEventKey(keycode=88, ctrl_pressed=true)]
-}
-ui_paste={
-"deadzone": 0.5,
-"events": [InputEventKey(keycode=86, ctrl_pressed=true)]
-}
-ui_clean={
-"deadzone": 0.5,
-"events": [Key(keycode=76)]
-}
-ui_quarantine={
-"deadzone": 0.5,
-"events": [Key(keycode=81)]
-}
-ui_compress={
-"deadzone": 0.5,
-"events": [Key(keycode=77)]
-}
+rendering_device/driver.windows="d3d12"
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
