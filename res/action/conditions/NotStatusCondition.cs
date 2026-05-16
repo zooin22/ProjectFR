@@ -17,6 +17,6 @@ public class NotStatusCondition : IActionCondition
         if (context.StatusEffects == null || context.Actor == null)
             return true;
 
-        return !context.StatusEffects.HasEffect(context.Actor.ToString() ?? "", StatusType);
+        return !context.StatusEffects.HasEffect(context.Actor.Id, StatusType);
     }
 }

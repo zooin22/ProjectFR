@@ -37,7 +37,7 @@ public class QuarantineAction : IAction
         context.Actor.ConsumeAp(ApCost);
 
         context.StatusEffects.AddEffect(
-            context.Target.ToString() ?? "",
+            context.Target.Id,
             StatusEffect.Quarantine,
             3
         );

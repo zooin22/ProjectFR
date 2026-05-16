@@ -22,7 +22,7 @@ public partial class ContextActionData : Resource
     [Export]
     public Godot.Collections.Array<Resource> Conditions { get; set; } = new();
 
-    public override void _ValidateProperty(Dictionary property)
+    public override void _ValidateProperty(Godot.Collections.Dictionary property)
     {
         base._ValidateProperty(property);
     }

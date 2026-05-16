@@ -37,7 +37,7 @@ public class CompressAction : IAction
         context.Actor.ConsumeAp(ApCost);
 
         context.StatusEffects.AddEffect(
-            context.Target.ToString() ?? "",
+            context.Target.Id,
             StatusEffect.Compressed,
             4,
             -2

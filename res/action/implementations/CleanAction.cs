@@ -47,7 +47,7 @@ public class CleanAction : IAction
 
             if (context.StatusEffects != null)
             {
-                context.StatusEffects.ClearEffects(context.Actor.ToString() ?? "");
+                context.StatusEffects.ClearEffects(context.Actor.Id);
             }
 
             return new ActionResult(true, $"Cleaned area dealing {totalDamage} damage and removing own status effects", totalDamage);

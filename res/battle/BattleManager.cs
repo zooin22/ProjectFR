@@ -25,6 +25,8 @@ public class BattleManager
     private List<string> _battleLog = new();
 
     public IReadOnlyList<string> BattleLog => _battleLog.AsReadOnly();
+    public StatusEffectSystem StatusEffects => _statusEffects;
+    public ClipboardSystem Clipboard => _clipboard;
 
     public BattleManager(ActorState player)
     {
@@ -82,10 +84,10 @@ public class BattleManager
             if (!enemy.IsAlive)
                 continue;
 
-            if (_statusEffects.HasEffect(enemy.ToString() ?? "", StatusEffect.Quarantine))
+            if (_statusEffects.HasEffect(enemy.Id, StatusEffect.Quarantine))
             {
-                AddLog($"{enemy} is quarantined and cannot act!");
-                _statusEffects.UpdateDurations(enemy.ToString() ?? "");
+                AddLog($"{enemy.DisplayName} is quarantined and cannot act!");
+                _statusEffects.UpdateDurations(enemy.Id);
                 continue;
             }
 
@@ -94,7 +96,7 @@ public class BattleManager
                 PerformEnemyAction(enemy);
             }
 
-            _statusEffects.UpdateDurations(enemy.ToString() ?? "");
+            _statusEffects.UpdateDurations(enemy.Id);
         }
 
         CurrentState = BattleState.EndTurn;
@@ -112,15 +114,15 @@ public class BattleManager
         var executableActions = _actionRegistry.GetExecutableActions(context);
         if (executableActions.Count == 0)
         {
-            int damage = System.Math.Max(1, enemy.AttackPower + _statusEffects.GetAttackModifier(enemy.ToString() ?? ""));
+            int damage = System.Math.Max(1, enemy.AttackPower + _statusEffects.GetAttackModifier(enemy.Id));
             Player.TakeDamage(damage);
-            AddLog($"{enemy} attacks dealing {damage} damage!");
+            AddLog($"{enemy.DisplayName} attacks dealing {damage} damage!");
             return;
         }
 
         var action = executableActions[Random.Shared.Next(executableActions.Count)];
         var result = action.Execute(context);
-        AddLog($"{enemy}: {result.Message}");
+        AddLog($"{enemy.DisplayName}: {result.Message}");
     }
 
     private void EndRound()
@@ -135,7 +137,11 @@ public class BattleManager
         }
 
         Player.RestoreAllAp();
-        _statusEffects.UpdateDurations(Player.ToString() ?? "");
+        foreach (var enemy in Enemies)
+        {
+            enemy.RestoreAllAp();
+        }
+        _statusEffects.UpdateDurations(Player.Id);
 
         CurrentState = BattleState.PlayerTurn;
         AddLog($"--- Turn {TurnCount} ---");

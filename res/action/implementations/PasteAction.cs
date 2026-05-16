@@ -42,7 +42,6 @@ public class PasteAction : IAction
             return new ActionResult(false, "Nothing to paste");
 
         int damage = 0;
-        string effectName = "";
 
         if (pastedNode is SpecialFileNode)
         {
@@ -60,7 +59,7 @@ public class PasteAction : IAction
         {
             if (context.StatusEffects != null)
             {
-                context.StatusEffects.AddEffect(context.Target.ToString() ?? "", StatusEffect.Quarantine, 3);
+                context.StatusEffects.AddEffect(context.Target.Id, StatusEffect.Quarantine, 3);
                 return new ActionResult(true, "Pasted Folder and applied Quarantine (3 turns)");
             }
             return new ActionResult(false, "Cannot apply status effect");
