@@ -7,6 +7,9 @@ using ProjectFR.Data.Nodes;
 
 namespace ProjectFR.Scenes;
 
+/// <summary>
+/// Battle scene controller - manages the UI and game flow during battle
+/// </summary>
 public partial class BattleScene : Node
 {
     private BattleManager _battleManager = null!;
@@ -20,6 +23,9 @@ public partial class BattleScene : Node
     private readonly Dictionary<string, Button> _actionButtons = new();
     private readonly Dictionary<string, NodeData> _enemyNodes = new();
 
+    /// <summary>
+    /// Called when the scene is ready - initializes UI and battle
+    /// </summary>
     public override void _Ready()
     {
         InitializeUI();
@@ -27,6 +33,9 @@ public partial class BattleScene : Node
         UpdateUI();
     }
 
+    /// <summary>
+    /// Initializes all UI elements from the scene tree
+    /// </summary>
     private void InitializeUI()
     {
         _playerHpLabel = GetNode<Label>("VBoxContainer/PlayerInfoPanel/HBoxContainer/HPLabel");
@@ -42,6 +51,9 @@ public partial class BattleScene : Node
         CreateActionButtons();
     }
 
+    /// <summary>
+    /// Creates action buttons dynamically from the action registry
+    /// </summary>
     private void CreateActionButtons()
     {
         _actionRegistry = new ActionRegistry();
@@ -61,29 +73,78 @@ public partial class BattleScene : Node
         }
     }
 
+    /// <summary>
+    /// Initializes the battle with player and enemies
+    /// </summary>
     private void InitializeBattle()
     {
-        var player = new ActorState(maxHp: 30, maxAp: 5, attackPower: 4, displayName: "Player.exe");
+        var player = new ActorState(
+            maxHp: BattleConstants.DefaultPlayerMaxHp,
+            maxAp: BattleConstants.DefaultPlayerMaxAp,
+            attackPower: BattleConstants.DefaultPlayerAttackPower,
+            displayName: BattleConstants.PlayerDisplayName
+        );
         _battleManager = new BattleManager(player);
 
-        AddDummyEnemy(new ActorState(maxHp: 10, maxAp: 3, attackPower: 2, displayName: "Readme.txt"), new FileNode("Readme.txt", "res://dummy/readme.txt", 4));
-        AddDummyEnemy(new ActorState(maxHp: 8, maxAp: 2, attackPower: 2, displayName: "BuildCache"), new FolderNode("BuildCache", "res://dummy/buildcache"));
-        AddDummyEnemy(new ActorState(maxHp: 15, maxAp: 4, attackPower: 3, displayName: "Boss.zip"), new SpecialFileNode("Boss.zip", "res://dummy/boss.zip", 16));
+        AddDummyEnemy(
+            new ActorState(
+                maxHp: BattleConstants.DefaultEnemy1MaxHp,
+                maxAp: BattleConstants.DefaultEnemy1MaxAp,
+                attackPower: BattleConstants.DefaultEnemy1AttackPower,
+                displayName: "Readme.txt"
+            ),
+            new FileNode("Readme.txt", "res://dummy/readme.txt", 4)
+        );
+        
+        AddDummyEnemy(
+            new ActorState(
+                maxHp: BattleConstants.DefaultEnemy2MaxHp,
+                maxAp: BattleConstants.DefaultEnemy2MaxAp,
+                attackPower: BattleConstants.DefaultEnemy2AttackPower,
+                displayName: "BuildCache"
+            ),
+            new FolderNode("BuildCache", "res://dummy/buildcache")
+        );
+        
+        AddDummyEnemy(
+            new ActorState(
+                maxHp: BattleConstants.DefaultEnemy3MaxHp,
+                maxAp: BattleConstants.DefaultEnemy3MaxAp,
+                attackPower: BattleConstants.DefaultEnemy3AttackPower,
+                displayName: "Boss.zip"
+            ),
+            new SpecialFileNode("Boss.zip", "res://dummy/boss.zip", 16)
+        );
 
         _battleManager.StartBattle();
     }
 
+    /// <summary>
+    /// Adds a dummy enemy with associated node data
+    /// </summary>
+    /// <param name="enemy">The enemy actor state</param>
+    /// <param name="nodeData">The file/folder node representing this enemy</param>
     private void AddDummyEnemy(ActorState enemy, NodeData nodeData)
     {
+        ArgumentNullException.ThrowIfNull(enemy);
+        ArgumentNullException.ThrowIfNull(nodeData);
+        
         _battleManager.AddEnemy(enemy);
         _enemyNodes[enemy.Id] = nodeData;
     }
 
+    /// <summary>
+    /// Process function called every frame - handles input
+    /// </summary>
+    /// <param name="delta">Time since last frame in seconds</param>
     public override void _Process(double delta)
     {
         HandleInput();
     }
 
+    /// <summary>
+    /// Handles keyboard input for action execution
+    /// </summary>
     private void HandleInput()
     {
         if (ActionPressed("ui_open"))
@@ -106,21 +167,36 @@ public partial class BattleScene : Node
             OnActionButtonPressed("compress");
     }
 
+    /// <summary>
+    /// Checks if a specified input action was just pressed
+    /// </summary>
+    /// <param name="actionName">The name of the input action to check</param>
+    /// <returns>True if the action was just pressed, false otherwise</returns>
     private static bool ActionPressed(string actionName)
     {
         return InputMap.HasAction(actionName) && Input.IsActionJustPressed(actionName);
     }
 
+    /// <summary>
+    /// Called when an enemy is selected in the enemy list
+    /// </summary>
+    /// <param name="index">The index of the selected enemy</param>
     private void OnEnemySelected(long index)
     {
         UpdateActionButtons();
     }
 
+    /// <summary>
+    /// Called when an action button is pressed
+    /// </summary>
+    /// <param name="actionId">The ID of the action to execute</param>
     private void OnActionButtonPressed(string actionId)
     {
+        ArgumentNullException.ThrowIfNull(actionId);
+
         if (_battleManager.CurrentState != BattleState.PlayerTurn)
         {
-            _battleManager.AddLog($"지금은 플레이어 턴이 아님: {_battleManager.CurrentState}");
+            _battleManager.AddLog($"Not player's turn: {_battleManager.CurrentState}");
             UpdateUI();
             return;
         }
@@ -157,6 +233,10 @@ public partial class BattleScene : Node
         }
     }
 
+    /// <summary>
+    /// Gets the currently selected enemy from the list
+    /// </summary>
+    /// <returns>The selected enemy actor state, or null if none selected</returns>
     private ActorState? GetSelectedEnemy()
     {
         var selected = _enemyList.GetSelectedItems();
@@ -169,6 +249,9 @@ public partial class BattleScene : Node
             : null;
     }
 
+    /// <summary>
+    /// Removes defeated enemies from the tracking dictionary
+    /// </summary>
     private void CleanupDefeatedEnemies()
     {
         var aliveIds = _battleManager.Enemies.Select(enemy => enemy.Id).ToHashSet();
@@ -179,6 +262,9 @@ public partial class BattleScene : Node
         }
     }
 
+    /// <summary>
+    /// Updates all UI elements to reflect current battle state
+    /// </summary>
     private void UpdateUI()
     {
         _playerHpLabel.Text = $"HP: {_battleManager.Player.CurrentHp}/{_battleManager.Player.MaxHp}";
@@ -206,7 +292,7 @@ public partial class BattleScene : Node
         }
 
         _battleLogLabel.Clear();
-        foreach (var log in _battleManager.BattleLog.TakeLast(12))
+        foreach (var log in _battleManager.BattleLog.TakeLast(BattleConstants.UIBattleLogDisplayLines))
         {
             _battleLogLabel.AppendText(log + "\n");
         }
@@ -219,6 +305,9 @@ public partial class BattleScene : Node
         UpdateActionButtons();
     }
 
+    /// <summary>
+    /// Updates the enabled/disabled state of action buttons based on available actions
+    /// </summary>
     private void UpdateActionButtons()
     {
         var selectedEnemy = GetSelectedEnemy() ?? _battleManager.Enemies.FirstOrDefault(e => e.IsAlive);
@@ -243,23 +332,33 @@ public partial class BattleScene : Node
         }
     }
 
+    /// <summary>
+    /// Called when the battle ends to display victory/defeat message
+    /// </summary>
     private void OnBattleEnd()
     {
-        _battleManager.AddLog(_battleManager.IsPlayerAlive ? "Victory! 더미 전투 클리어" : "Defeat... 다시 시도해봐");
+        _battleManager.AddLog(_battleManager.IsPlayerAlive
+            ? "Victory! File system clean."
+            : "Defeat... System compromised.");
         UpdateUI();
     }
 
+    /// <summary>
+    /// Gets tooltip text for an action based on its ID
+    /// </summary>
+    /// <param name="actionId">The action ID</param>
+    /// <returns>The tooltip text describing the action</returns>
     private static string GetTooltipText(string actionId) => actionId switch
     {
-        "open" => "기본 공격",
-        "inspect" => "무료 정보 확인",
-        "delete" => "고데미지 단일기",
-        "copy" => "대상을 클립보드에 복사",
-        "cut" => "대미지 + 클립보드 저장",
-        "paste" => "클립보드 내용으로 추가 효과",
-        "clean" => "전체 2대미지 + 내 상태 해제",
-        "quarantine" => "행동 봉쇄",
-        "compress" => "공격력 감소",
+        "open" => "Basic attack",
+        "inspect" => "Free information check",
+        "delete" => "High damage single target",
+        "copy" => "Copy target to clipboard",
+        "cut" => "Damage and cut target to clipboard",
+        "paste" => "Paste from clipboard with bonus effect",
+        "clean" => "AoE damage + clear own status effects",
+        "quarantine" => "Prevent enemy action",
+        "compress" => "Reduce enemy attack power",
         _ => string.Empty
     };
 }
