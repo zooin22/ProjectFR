@@ -296,7 +296,7 @@ public partial class BattleScene : Control
         _battleLogLabel.Clear();
         foreach (var log in _battleManager.BattleLog.TakeLast(BattleConstants.UIBattleLogDisplayLines))
         {
-            _battleLogLabel.AppendText(log + "\n");
+            _battleLogLabel.AppendText(FormatBattleLog(log) + "\n");
         }
 
         if (_battleLogLabel.GetLineCount() > 0)
@@ -368,7 +368,9 @@ public partial class BattleScene : Control
                 AllActors = _battleManager.Enemies
             };
 
-            pair.Value.Disabled = _battleManager.CurrentState != BattleState.PlayerTurn || !action.CanExecute(previewContext);
+            var canExecute = _battleManager.CurrentState == BattleState.PlayerTurn && action.CanExecute(previewContext);
+            pair.Value.Disabled = !canExecute;
+            ApplyActionButtonStyle(pair.Value, action, canExecute);
         }
     }
 
@@ -474,6 +476,44 @@ public partial class BattleScene : Control
 
         return false;
     }
+
+    private static string FormatBattleLog(string log)
+    {
+        var color = log switch
+        {
+            var text when text.StartsWith("Player:") => "#7ee787",
+            var text when text.Contains("Victory") => "#79c0ff",
+            var text when text.Contains("Defeat") || text.Contains("defeated") || text.Contains("compromised") => "#ff7b72",
+            var text when text.StartsWith("--- Turn") => "#a5d6ff",
+            var text when text.Contains("cannot act") => "#d2a8ff",
+            var text when text.Contains("Action not found") || text.Contains("No alive enemies") || text.Contains("Not player's turn") => "#f2cc60",
+            var text when text.Contains(":") => "#ffa657",
+            _ => "#c9d1d9"
+        };
+
+        return $"[color={color}]{log}[/color]";
+    }
+
+    private static void ApplyActionButtonStyle(Button button, IAction action, bool canExecute)
+    {
+        button.Modulate = canExecute
+            ? GetActionReadyColor(action.ActionId)
+            : new Color(0.55f, 0.58f, 0.64f, 0.9f);
+    }
+
+    private static Color GetActionReadyColor(string actionId) => actionId switch
+    {
+        "open" => new Color(0.47f, 0.78f, 1.0f),
+        "inspect" => new Color(0.76f, 0.67f, 1.0f),
+        "delete" => new Color(1.0f, 0.49f, 0.45f),
+        "copy" => new Color(0.47f, 0.9f, 0.72f),
+        "cut" => new Color(1.0f, 0.64f, 0.4f),
+        "paste" => new Color(0.98f, 0.79f, 0.37f),
+        "clean" => new Color(0.42f, 0.86f, 0.86f),
+        "quarantine" => new Color(0.83f, 0.59f, 1.0f),
+        "compress" => new Color(0.59f, 0.92f, 0.6f),
+        _ => Colors.White
+    };
 
     private bool CanExecuteAction(string actionId)
     {
