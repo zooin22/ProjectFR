@@ -2,58 +2,181 @@
 
 [ext_resource type="Script" path="res://res/scenes/BattleScene.cs" id="1_3h6bd"]
 
-[node name="BattleScene" type="Node"]
-script = ExtResource("1_3h6bd")
-
-[node name="VBoxContainer" type="VBoxContainer" parent="."]
+[node name="BattleScene" type="Control"]
+layout_mode = 3
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-margin_left = 10.0
-margin_top = 10.0
-margin_right = -10.0
-margin_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_3h6bd")
 
-[node name="TurnCounterLabel" type="Label" parent="VBoxContainer"]
-custom_minimum_size = Vector2(0, 30)
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.0784314, 0.0941176, 0.12549, 1)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 24.0
+offset_right = -24.0
+offset_bottom = -24.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 16
+
+[node name="TopPanel" type="PanelContainer" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 88)
+
+[node name="TopMargin" type="MarginContainer" parent="VBoxContainer/TopPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 14
+
+[node name="TopVBox" type="VBoxContainer" parent="VBoxContainer/TopPanel/TopMargin"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="TitleLabel" type="Label" parent="VBoxContainer/TopPanel/TopMargin/TopVBox"]
+layout_mode = 2
+text = "ProjectFR Battle Test"
+
+[node name="TurnCounterLabel" type="Label" parent="VBoxContainer/TopPanel/TopMargin/TopVBox"]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
 text = "Turn: 0"
 
 [node name="PlayerInfoPanel" type="PanelContainer" parent="VBoxContainer"]
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(0, 64)
 
-[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/PlayerInfoPanel"]
-margin_left = 4.0
-margin_top = 4.0
-margin_right = 1000.0
-margin_bottom = 46.0
+[node name="PlayerInfoMargin" type="MarginContainer" parent="VBoxContainer/PlayerInfoPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 12
 
-[node name="Label" type="Label" parent="VBoxContainer/PlayerInfoPanel/HBoxContainer"]
-custom_minimum_size = Vector2(150, 0)
-text = "Player Status:"
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/PlayerInfoPanel/PlayerInfoMargin"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 18
 
-[node name="HPLabel" type="Label" parent="VBoxContainer/PlayerInfoPanel/HBoxContainer"]
-custom_minimum_size = Vector2(150, 0)
+[node name="Label" type="Label" parent="VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/HBoxContainer"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "Player"
+
+[node name="HPLabel" type="Label" parent="VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/HBoxContainer"]
+custom_minimum_size = Vector2(180, 0)
+layout_mode = 2
 text = "HP: 30/30"
 
-[node name="APLabel" type="Label" parent="VBoxContainer/PlayerInfoPanel/HBoxContainer"]
-custom_minimum_size = Vector2(150, 0)
+[node name="APLabel" type="Label" parent="VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/HBoxContainer"]
+custom_minimum_size = Vector2(180, 0)
+layout_mode = 2
 text = "AP: 5/5"
 
 [node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
-custom_minimum_size = Vector2(0, 200)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 16
 
-[node name="EnemyList" type="ItemList" parent="VBoxContainer/HBoxContainer"]
-custom_minimum_size = Vector2(200, 0)
+[node name="EnemyPanel" type="PanelContainer" parent="VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(280, 0)
+size_flags_vertical = 3
 
-[node name="BattleLog" type="RichTextLabel" parent="VBoxContainer/HBoxContainer"]
+[node name="EnemyMargin" type="MarginContainer" parent="VBoxContainer/HBoxContainer/EnemyPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="EnemyVBox" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/EnemyPanel/EnemyMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="EnemyTitleLabel" type="Label" parent="VBoxContainer/HBoxContainer/EnemyPanel/EnemyMargin/EnemyVBox"]
+layout_mode = 2
+text = "Enemies"
+
+[node name="EnemyList" type="ItemList" parent="VBoxContainer/HBoxContainer/EnemyPanel/EnemyMargin/EnemyVBox"]
+custom_minimum_size = Vector2(0, 280)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="BattleLogPanel" type="PanelContainer" parent="VBoxContainer/HBoxContainer"]
 size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="BattleLogMargin" type="MarginContainer" parent="VBoxContainer/HBoxContainer/BattleLogPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="BattleLogVBox" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/BattleLogPanel/BattleLogMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="BattleLogTitleLabel" type="Label" parent="VBoxContainer/HBoxContainer/BattleLogPanel/BattleLogMargin/BattleLogVBox"]
+layout_mode = 2
+text = "Battle Log"
+
+[node name="BattleLog" type="RichTextLabel" parent="VBoxContainer/HBoxContainer/BattleLogPanel/BattleLogMargin/BattleLogVBox"]
+custom_minimum_size = Vector2(0, 280)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 bbcode_enabled = true
+scroll_following = true
 
 [node name="ActionsPanel" type="PanelContainer" parent="VBoxContainer"]
-custom_minimum_size = Vector2(0, 150)
+custom_minimum_size = Vector2(0, 180)
 
-[node name="GridContainer" type="GridContainer" parent="VBoxContainer/ActionsPanel"]
-margin_left = 4.0
-margin_top = 4.0
-margin_right = -4.0
-margin_bottom = -4.0
+[node name="ActionsMargin" type="MarginContainer" parent="VBoxContainer/ActionsPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="ActionsVBox" type="VBoxContainer" parent="VBoxContainer/ActionsPanel/ActionsMargin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="ActionsTitleLabel" type="Label" parent="VBoxContainer/ActionsPanel/ActionsMargin/ActionsVBox"]
+layout_mode = 2
+text = "Actions"
+
+[node name="GridContainer" type="GridContainer" parent="VBoxContainer/ActionsPanel/ActionsMargin/ActionsVBox"]
+layout_mode = 2
+size_flags_horizontal = 3
 columns = 3
+
+[node name="HintPanel" type="PanelContainer" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 48)
+
+[node name="HintMargin" type="MarginContainer" parent="VBoxContainer/HintPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="HintLabel" type="Label" parent="VBoxContainer/HintPanel/HintMargin"]
+layout_mode = 2
+text = "심플 더미 UI · 적 선택 후 액션 실행 · 자동 스모크 테스트 지원"

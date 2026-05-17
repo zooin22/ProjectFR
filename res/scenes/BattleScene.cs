@@ -40,12 +40,12 @@ public partial class BattleScene : Node
     /// </summary>
     private void InitializeUI()
     {
-        _playerHpLabel = GetNode<Label>("VBoxContainer/PlayerInfoPanel/HBoxContainer/HPLabel");
-        _playerApLabel = GetNode<Label>("VBoxContainer/PlayerInfoPanel/HBoxContainer/APLabel");
-        _enemyList = GetNode<ItemList>("VBoxContainer/HBoxContainer/EnemyList");
-        _battleLogLabel = GetNode<RichTextLabel>("VBoxContainer/HBoxContainer/BattleLog");
-        _actionButtonsContainer = GetNode<GridContainer>("VBoxContainer/ActionsPanel/GridContainer");
-        _turnCounterLabel = GetNode<Label>("VBoxContainer/TurnCounterLabel");
+        _playerHpLabel = GetNode<Label>("VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/HBoxContainer/HPLabel");
+        _playerApLabel = GetNode<Label>("VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/HBoxContainer/APLabel");
+        _enemyList = GetNode<ItemList>("VBoxContainer/HBoxContainer/EnemyPanel/EnemyMargin/EnemyVBox/EnemyList");
+        _battleLogLabel = GetNode<RichTextLabel>("VBoxContainer/HBoxContainer/BattleLogPanel/BattleLogMargin/BattleLogVBox/BattleLog");
+        _actionButtonsContainer = GetNode<GridContainer>("VBoxContainer/ActionsPanel/ActionsMargin/ActionsVBox/GridContainer");
+        _turnCounterLabel = GetNode<Label>("VBoxContainer/TopPanel/TopMargin/TopVBox/TurnCounterLabel");
 
         _enemyList.SelectMode = ItemList.SelectModeEnum.Single;
         _enemyList.ItemSelected += OnEnemySelected;
