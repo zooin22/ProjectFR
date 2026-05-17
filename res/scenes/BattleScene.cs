@@ -4,6 +4,7 @@ using ProjectFR.Action.Implementations;
 using ProjectFR.Battle;
 using ProjectFR.Data;
 using ProjectFR.Data.Nodes;
+using ProjectFR.Systems;
 using System.Threading.Tasks;
 
 namespace ProjectFR.Scenes;
@@ -19,11 +20,13 @@ public partial class BattleScene : Control
     private Label _playerApLabel = null!;
     private ProgressBar _playerHpBar = null!;
     private ProgressBar _playerApBar = null!;
+    private Label _playerStatusLabel = null!;
     private ItemList _enemyList = null!;
     private Label _selectedEnemyNameLabel = null!;
     private Label _selectedEnemyTypeLabel = null!;
     private Label _selectedEnemyPathLabel = null!;
     private Label _selectedEnemyStatsLabel = null!;
+    private Label _selectedEnemyStatusLabel = null!;
     private ProgressBar _selectedEnemyHpBar = null!;
     private ProgressBar _selectedEnemyApBar = null!;
     private RichTextLabel _battleLogLabel = null!;
@@ -53,11 +56,13 @@ public partial class BattleScene : Control
         _playerApLabel = GetNode<Label>("VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/PlayerInfoVBox/PlayerHeader/APLabel");
         _playerHpBar = GetNode<ProgressBar>("VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/PlayerInfoVBox/PlayerBars/HpBar");
         _playerApBar = GetNode<ProgressBar>("VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/PlayerInfoVBox/PlayerBars/ApBar");
+        _playerStatusLabel = GetNode<Label>("VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/PlayerInfoVBox/PlayerStatusLabel");
         _enemyList = GetNode<ItemList>("VBoxContainer/ContentRow/EnemyPanel/EnemyMargin/EnemyVBox/EnemyList");
         _selectedEnemyNameLabel = GetNode<Label>("VBoxContainer/ContentRow/EnemyDetailPanel/EnemyDetailMargin/EnemyDetailVBox/SelectedEnemyNameLabel");
         _selectedEnemyTypeLabel = GetNode<Label>("VBoxContainer/ContentRow/EnemyDetailPanel/EnemyDetailMargin/EnemyDetailVBox/SelectedEnemyTypeLabel");
         _selectedEnemyPathLabel = GetNode<Label>("VBoxContainer/ContentRow/EnemyDetailPanel/EnemyDetailMargin/EnemyDetailVBox/SelectedEnemyPathLabel");
         _selectedEnemyStatsLabel = GetNode<Label>("VBoxContainer/ContentRow/EnemyDetailPanel/EnemyDetailMargin/EnemyDetailVBox/SelectedEnemyStatsLabel");
+        _selectedEnemyStatusLabel = GetNode<Label>("VBoxContainer/ContentRow/EnemyDetailPanel/EnemyDetailMargin/EnemyDetailVBox/SelectedEnemyStatusLabel");
         _selectedEnemyHpBar = GetNode<ProgressBar>("VBoxContainer/ContentRow/EnemyDetailPanel/EnemyDetailMargin/EnemyDetailVBox/SelectedEnemyHpBar");
         _selectedEnemyApBar = GetNode<ProgressBar>("VBoxContainer/ContentRow/EnemyDetailPanel/EnemyDetailMargin/EnemyDetailVBox/SelectedEnemyApBar");
         _battleLogLabel = GetNode<RichTextLabel>("VBoxContainer/ContentRow/BattleLogPanel/BattleLogMargin/BattleLogVBox/BattleLog");
@@ -268,6 +273,7 @@ public partial class BattleScene : Control
         _playerApBar.Value = _battleManager.Player.CurrentAp;
         _playerApBar.TooltipText = _playerApLabel.Text;
         _turnCounterLabel.Text = $"Turn: {_battleManager.TurnCount} / State: {_battleManager.CurrentState}";
+        _playerStatusLabel.Text = $"Status: {FormatStatusEffects(_battleManager.StatusEffects.GetEffects(_battleManager.Player.Id))}";
 
         var selectedEnemyId = GetSelectedEnemy()?.Id;
 
@@ -283,7 +289,9 @@ public partial class BattleScene : Control
                 SpecialFileNode => "Special",
                 _ => "File"
             };
-            var display = $"{enemy.DisplayName} [{kind}] - HP {enemy.CurrentHp}/{enemy.MaxHp}, AP {enemy.CurrentAp}/{enemy.MaxAp}";
+            var effects = _battleManager.StatusEffects.GetEffects(enemy.Id);
+            var statusSuffix = effects.Count > 0 ? $" · {FormatCompactStatusEffects(effects)}" : string.Empty;
+            var display = $"{enemy.DisplayName} [{kind}] - HP {enemy.CurrentHp}/{enemy.MaxHp}, AP {enemy.CurrentAp}/{enemy.MaxAp}{statusSuffix}";
             _enemyList.AddItem(display);
 
             if (enemy.Id == selectedEnemyId)
@@ -325,6 +333,7 @@ public partial class BattleScene : Control
             _selectedEnemyTypeLabel.Text = "Type: -";
             _selectedEnemyPathLabel.Text = "Path: -";
             _selectedEnemyStatsLabel.Text = "ATK: - · Size: -";
+            _selectedEnemyStatusLabel.Text = "Status: None";
             _selectedEnemyHpBar.MaxValue = 1;
             _selectedEnemyHpBar.Value = 0;
             _selectedEnemyApBar.MaxValue = 1;
@@ -343,6 +352,7 @@ public partial class BattleScene : Control
         _selectedEnemyTypeLabel.Text = $"Type: {kind}";
         _selectedEnemyPathLabel.Text = $"Path: {targetNode.Path}";
         _selectedEnemyStatsLabel.Text = $"ATK: {selectedEnemy.AttackPower} · Size: {targetNode.Size}";
+        _selectedEnemyStatusLabel.Text = $"Status: {FormatStatusEffects(_battleManager.StatusEffects.GetEffects(selectedEnemy.Id))}";
 
         _selectedEnemyHpBar.MaxValue = selectedEnemy.MaxHp;
         _selectedEnemyHpBar.Value = selectedEnemy.CurrentHp;
@@ -484,6 +494,36 @@ public partial class BattleScene : Control
 
         return false;
     }
+
+    private static string FormatStatusEffects(IReadOnlyList<StatusEffectInstance> effects)
+    {
+        if (effects.Count == 0)
+            return "None";
+
+        return string.Join(", ", effects.Select(FormatStatusEffect));
+    }
+
+    private static string FormatCompactStatusEffects(IReadOnlyList<StatusEffectInstance> effects)
+    {
+        if (effects.Count == 0)
+            return string.Empty;
+
+        return string.Join(", ", effects.Select(effect => $"{GetStatusShortName(effect.Type)} {effect.Duration}T"));
+    }
+
+    private static string FormatStatusEffect(StatusEffectInstance effect)
+    {
+        var suffix = effect.Magnitude != 0 ? $" {effect.Magnitude:+#;-#;0}" : string.Empty;
+        return $"{GetStatusShortName(effect.Type)} {effect.Duration}T{suffix}";
+    }
+
+    private static string GetStatusShortName(StatusEffect effect) => effect switch
+    {
+        StatusEffect.Quarantine => "Quarantine",
+        StatusEffect.Compressed => "Compressed",
+        StatusEffect.Corrupted => "Corrupted",
+        _ => effect.ToString()
+    };
 
     private static string FormatBattleLog(string log)
     {

@@ -109,6 +109,11 @@ max_value = 5.0
 value = 5.0
 show_percentage = false
 
+[node name="PlayerStatusLabel" type="Label" parent="VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/PlayerInfoVBox"]
+layout_mode = 2
+text = "Status: None"
+autowrap_mode = 2
+
 [node name="ContentRow" type="HBoxContainer" parent="VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -176,6 +181,11 @@ autowrap_mode = 2
 layout_mode = 2
 text = "ATK: - · Size: -"
 
+autowrap_mode = 2
+
+[node name="SelectedEnemyStatusLabel" type="Label" parent="VBoxContainer/ContentRow/EnemyDetailPanel/EnemyDetailMargin/EnemyDetailVBox"]
+layout_mode = 2
+text = "Status: None"
 autowrap_mode = 2
 
 [node name="SelectedEnemyHpBar" type="ProgressBar" parent="VBoxContainer/ContentRow/EnemyDetailPanel/EnemyDetailMargin/EnemyDetailVBox"]
