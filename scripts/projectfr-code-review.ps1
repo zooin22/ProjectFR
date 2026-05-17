@@ -17,6 +17,56 @@ $env:PYTHONIOENCODING = 'utf-8'
 $env:LANG = 'ko_KR.UTF-8'
 $env:LC_ALL = 'ko_KR.UTF-8'
 
+function ConvertTo-ArgumentString {
+    param([string[]]$ArgumentList)
+
+    return ($ArgumentList | ForEach-Object {
+        if ($_ -match '[\s"]') {
+            '"' + ($_ -replace '"', '\"') + '"'
+        }
+        else {
+            $_
+        }
+    }) -join ' '
+}
+
+function Invoke-Utf8Process {
+    param(
+        [Parameter(Mandatory = $true)][string]$FilePath,
+        [string[]]$ArgumentList = @(),
+        [string]$WorkingDirectory = (Get-Location).Path,
+        [hashtable]$Environment = @{}
+    )
+
+    $startInfo = New-Object System.Diagnostics.ProcessStartInfo
+    $startInfo.FileName = $FilePath
+    $startInfo.Arguments = ConvertTo-ArgumentString $ArgumentList
+    $startInfo.WorkingDirectory = $WorkingDirectory
+    $startInfo.UseShellExecute = $false
+    $startInfo.RedirectStandardOutput = $true
+    $startInfo.RedirectStandardError = $true
+    $startInfo.StandardOutputEncoding = $utf8NoBom
+    $startInfo.StandardErrorEncoding = $utf8NoBom
+
+    foreach ($entry in $Environment.GetEnumerator()) {
+        $startInfo.EnvironmentVariables[$entry.Key] = [string]$entry.Value
+    }
+
+    $process = New-Object System.Diagnostics.Process
+    $process.StartInfo = $startInfo
+    [void]$process.Start()
+
+    $stdout = $process.StandardOutput.ReadToEnd()
+    $stderr = $process.StandardError.ReadToEnd()
+    $process.WaitForExit()
+
+    [pscustomobject]@{
+        ExitCode = $process.ExitCode
+        StdOut = $stdout
+        StdErr = $stderr
+    }
+}
+
 Set-Location $RepoPath
 
 $changedFiles = git diff --name-only "origin/$Branch..HEAD" 2>$null
@@ -35,8 +85,15 @@ $prompt = @"
 결과는 한국어로, 텔레그램에 보내기 좋게 bullet 위주로 작성해줘.
 "@
 
-$review = (& claude -p $prompt 2>&1 | Out-String).Trim()
-$review = $review -replace "`r`n", "`n"
+$commonEnv = @{
+    OPENAI_API_ENCODING = 'utf-8'
+    PYTHONIOENCODING = 'utf-8'
+    LANG = 'ko_KR.UTF-8'
+    LC_ALL = 'ko_KR.UTF-8'
+}
+
+$claudeResult = Invoke-Utf8Process -FilePath 'C:\Users\zooin\AppData\Roaming\npm\claude.cmd' -ArgumentList @('-p', $prompt) -WorkingDirectory $RepoPath -Environment $commonEnv
+$review = ($claudeResult.StdOut + $claudeResult.StdErr).Trim() -replace "`r`n", "`n"
 if (-not $review) {
     $review = '코드 리뷰 결과가 비어 있음.'
 }
@@ -58,4 +115,7 @@ if ($DryRun) {
     exit 0
 }
 
-openclaw message send --channel telegram --target $Target --message $message --silent | Out-Null
+$sendResult = Invoke-Utf8Process -FilePath 'C:\Users\zooin\AppData\Roaming\npm\openclaw.cmd' -ArgumentList @('message', 'send', '--channel', 'telegram', '--target', $Target, '--message', $message, '--silent') -WorkingDirectory $RepoPath -Environment $commonEnv
+if ($sendResult.ExitCode -ne 0) {
+    throw "메시지 전송 실패: $($sendResult.StdErr)$($sendResult.StdOut)"
+}
