@@ -48,6 +48,8 @@ public partial class BattleScene : Control
     private MissionData _currentMission = null!;
     private MissionProgress _missionProgress = null!;
     private MissionResult? _missionResult;
+    private CampaignModifiers _campaignModifiers = null!;
+    private int _effectiveTurnLimit;
     private bool _missionResolved;
 
     public override void _Ready()
@@ -117,6 +119,8 @@ public partial class BattleScene : Control
         CampaignState.EnsureInitialized();
         CampaignState.BeginSelectedMission();
         _currentMission = CampaignState.CurrentMission ?? CampaignState.GetSelectedMission();
+        _campaignModifiers = CampaignState.GetModifiers();
+        _effectiveTurnLimit = Math.Max(3, _currentMission.TurnLimit - _campaignModifiers.HeatTurnPenalty);
         _missionProgress = new MissionProgress(_currentMission);
         _missionResult = null;
         _missionResolved = false;
@@ -128,7 +132,8 @@ public partial class BattleScene : Control
         };
 
         _battleManager.StartBattle();
-        _battleManager.AddLog($"Mission accepted: {_currentMission.Title} / Client: {_currentMission.ClientName}");
+        _battleManager.AddLog($"Mission accepted: {_currentMission.Title} / Client: {_currentMission.Client.Name}");
+        _battleManager.AddLog($"Faction: {_currentMission.Client.Faction} / Heat: {CampaignState.Heat} / {_campaignModifiers.Summary}");
         LoadCurrentEncounter(isFirstEncounter: true);
         _executedPlayerActions.Clear();
     }
@@ -136,7 +141,7 @@ public partial class BattleScene : Control
     private void LoadCurrentEncounter(bool isFirstEncounter = false)
     {
         _enemyNodes.Clear();
-        var encounter = BattleFactory.CreateEncounter(_dungeon.CurrentFolder);
+        var encounter = BattleFactory.CreateEncounter(_dungeon.CurrentFolder, _campaignModifiers);
 
         foreach (var enemy in encounter)
         {
@@ -150,7 +155,7 @@ public partial class BattleScene : Control
             restorePlayerAp: !isFirstEncounter
         );
         _battleManager.AddLog($"Event: {metadata.EventSummary}");
-        _battleManager.AddLog($"Objective: {_currentMission.ObjectiveType} {_currentMission.TargetPath} before turn {_currentMission.TurnLimit}");
+        _battleManager.AddLog($"Objective: {_currentMission.ObjectiveType} {_currentMission.TargetPath} before turn {_effectiveTurnLimit}");
     }
 
     public override void _Process(double delta)
@@ -297,9 +302,9 @@ public partial class BattleScene : Control
         if (_battleManager.IsBattleEnd || _missionResolved)
             return;
 
-        if (_missionProgress.HasExceededTurnLimit(_battleManager.TurnCount))
+        if (_battleManager.TurnCount > _effectiveTurnLimit)
         {
-            _battleManager.FinishBattle($"Trace level critical. Turn limit {_currentMission.TurnLimit} exceeded.");
+            _battleManager.FinishBattle($"Trace level critical. Turn limit {_effectiveTurnLimit} exceeded.");
         }
     }
 
@@ -317,9 +322,9 @@ public partial class BattleScene : Control
         var nextFolder = _dungeon.PeekNextFolder();
         var nextMetadata = _dungeon.PeekNextMetadata();
 
-        _turnCounterLabel.Text = $"Mission: {_currentMission.Title} / Turn: {_battleManager.TurnCount}/{_currentMission.TurnLimit} / State: {_battleManager.CurrentState}";
-        _dungeonInfoLabel.Text = $"Client: {_currentMission.ClientName}\nObjective: {_currentMission.ObjectiveType} {_currentMission.TargetPath}\n{_dungeon.GetProgressLabel()}\nCurrent: {_dungeon.CurrentFolder.Path}\nNext: {(nextFolder != null ? nextFolder.Path : "Dungeon clear")}";
-        _dungeonEventLabel.Text = $"Theme: {currentMetadata.ThemeName} (Depth {currentMetadata.Depth})\nEvent: {currentMetadata.EventSummary}\nReward: {currentMetadata.RewardPreview}{(nextMetadata != null ? $"\nUp Next: {nextMetadata.ThemeName}" : string.Empty)}\nObjective Status: {(_missionProgress.ObjectiveCompleted ? "Complete" : "Pending")}";
+        _turnCounterLabel.Text = $"Mission: {_currentMission.Title} / Turn: {_battleManager.TurnCount}/{_effectiveTurnLimit} / State: {_battleManager.CurrentState}";
+        _dungeonInfoLabel.Text = $"Client: {_currentMission.Client.Name} · {_currentMission.Client.Faction}\nObjective: {_currentMission.ObjectiveType} {_currentMission.TargetPath}\n{_dungeon.GetProgressLabel()}\nCurrent: {_dungeon.CurrentFolder.Path}\nNext: {(nextFolder != null ? nextFolder.Path : "Dungeon clear")}";
+        _dungeonEventLabel.Text = $"Theme: {currentMetadata.ThemeName} (Depth {currentMetadata.Depth})\nEvent: {currentMetadata.EventSummary}\nReward: {currentMetadata.RewardPreview}{(nextMetadata != null ? $"\nUp Next: {nextMetadata.ThemeName}" : string.Empty)}\nTrace: {_campaignModifiers.Summary}\nObjective Status: {(_missionProgress.ObjectiveCompleted ? "Complete" : "Pending")}";
         _playerStatusLabel.Text = $"Status: {FormatStatusEffects(_battleManager.StatusEffects.GetEffects(_battleManager.Player.Id))}";
 
         var selectedEnemyId = GetSelectedEnemy()?.Id;
@@ -444,11 +449,12 @@ public partial class BattleScene : Control
         if (!_missionResolved)
         {
             var dungeonCleared = _dungeon.ClearedNodeCount >= _dungeon.TotalNodeCount && !_battleManager.HasEnemies;
-            _missionResult = _missionProgress.Resolve(_battleManager.IsPlayerAlive, dungeonCleared, _battleManager.TurnCount);
+            _missionResult = _missionProgress.Resolve(_battleManager.IsPlayerAlive, dungeonCleared, _battleManager.TurnCount, _effectiveTurnLimit);
             CampaignState.ApplyMissionResult(_missionResult);
             _battleManager.AddLog(_missionResult.Success
                 ? $"Mission complete: {_missionResult.Summary}"
                 : $"Mission failed: {_missionResult.Summary}");
+            _battleManager.AddLog($"Payout: {_missionResult.CreditsDelta:+#;-#;0}c / Rep {_missionResult.ReputationDelta:+#;-#;0} / Heat {_missionResult.HeatDelta:+#;-#;0}");
             _missionResolved = true;
         }
 

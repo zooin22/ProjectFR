@@ -32,17 +32,17 @@ public class MissionProgress
         return $"Mission objective complete: {Mission.ObjectiveType} @ {Mission.TargetPath}";
     }
 
-    public bool HasExceededTurnLimit(int turnCount)
+    public bool HasExceededTurnLimit(int turnCount, int turnLimit)
     {
-        return turnCount > Mission.TurnLimit;
+        return turnCount > turnLimit;
     }
 
-    public MissionResult Resolve(bool playerSurvived, bool dungeonCleared, int turnsUsed)
+    public MissionResult Resolve(bool playerSurvived, bool dungeonCleared, int turnsUsed, int turnLimit)
     {
-        bool success = playerSurvived && dungeonCleared && _objectiveCompleted && !HasExceededTurnLimit(turnsUsed);
+        bool success = playerSurvived && dungeonCleared && _objectiveCompleted && !HasExceededTurnLimit(turnsUsed, turnLimit);
         string summary = success
             ? $"{Mission.Title} complete. Client package delivered cleanly."
-            : BuildFailureSummary(playerSurvived, dungeonCleared, turnsUsed);
+            : BuildFailureSummary(playerSurvived, dungeonCleared, turnsUsed, turnLimit);
 
         return new MissionResult(
             mission: Mission,
@@ -58,13 +58,13 @@ public class MissionProgress
         );
     }
 
-    private string BuildFailureSummary(bool playerSurvived, bool dungeonCleared, int turnsUsed)
+    private string BuildFailureSummary(bool playerSurvived, bool dungeonCleared, int turnsUsed, int turnLimit)
     {
         if (!playerSurvived)
             return $"{Mission.Title} failed. Operator trace collapsed before extraction.";
 
-        if (HasExceededTurnLimit(turnsUsed))
-            return $"{Mission.Title} failed. Trace level spiked past turn limit {Mission.TurnLimit}.";
+        if (HasExceededTurnLimit(turnsUsed, turnLimit))
+            return $"{Mission.Title} failed. Trace level spiked past turn limit.";
 
         if (!_objectiveCompleted)
             return $"{Mission.Title} failed. Objective at {Mission.TargetPath} was not secured.";

@@ -4,7 +4,7 @@ public class MissionData
 {
     public string Id { get; }
     public string Title { get; }
-    public string ClientName { get; }
+    public MissionClientProfile Client { get; }
     public string Briefing { get; }
     public MissionObjectiveType ObjectiveType { get; }
     public string TargetPath { get; }
@@ -17,7 +17,7 @@ public class MissionData
     public MissionData(
         string id,
         string title,
-        string clientName,
+        MissionClientProfile client,
         string briefing,
         MissionObjectiveType objectiveType,
         string targetPath,
@@ -29,7 +29,7 @@ public class MissionData
     {
         Id = id;
         Title = title;
-        ClientName = clientName;
+        Client = client;
         Briefing = briefing;
         ObjectiveType = objectiveType;
         TargetPath = targetPath;

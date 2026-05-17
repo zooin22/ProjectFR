@@ -1,6 +1,7 @@
 using ProjectFR.Action.Implementations;
 using ProjectFR.Data;
 using ProjectFR.Data.Nodes;
+using ProjectFR.Mission;
 
 namespace ProjectFR.Battle;
 
@@ -55,33 +56,33 @@ public static class BattleFactory
         return new BattleDungeon(root, metadata);
     }
 
-    public static List<(ActorState Actor, NodeData NodeData)> CreateEncounter(FolderNode folder)
+    public static List<(ActorState Actor, NodeData NodeData)> CreateEncounter(FolderNode folder, CampaignModifiers modifiers)
     {
         return folder.Children
-            .Select(node => (CreateActorForNode(node), node))
+            .Select(node => (CreateActorForNode(node, modifiers), node))
             .ToList();
     }
 
-    private static ActorState CreateActorForNode(NodeData node)
+    private static ActorState CreateActorForNode(NodeData node, CampaignModifiers modifiers)
     {
         return node switch
         {
             SpecialFileNode => new ActorState(
-                maxHp: BattleConstants.DefaultSpecialFileMaxHp,
-                maxAp: BattleConstants.DefaultSpecialFileMaxAp,
-                attackPower: BattleConstants.DefaultSpecialFileAttackPower,
+                maxHp: BattleConstants.DefaultSpecialFileMaxHp + modifiers.EnemyHpBonus,
+                maxAp: BattleConstants.DefaultSpecialFileMaxAp + modifiers.EnemyApBonus,
+                attackPower: BattleConstants.DefaultSpecialFileAttackPower + modifiers.EnemyAttackBonus,
                 displayName: node.Name
             ),
             FolderNode => new ActorState(
-                maxHp: BattleConstants.DefaultFolderMaxHp,
-                maxAp: BattleConstants.DefaultFolderMaxAp,
-                attackPower: BattleConstants.DefaultFolderAttackPower,
+                maxHp: BattleConstants.DefaultFolderMaxHp + modifiers.EnemyHpBonus,
+                maxAp: BattleConstants.DefaultFolderMaxAp + modifiers.EnemyApBonus,
+                attackPower: BattleConstants.DefaultFolderAttackPower + modifiers.EnemyAttackBonus,
                 displayName: node.Name
             ),
             _ => new ActorState(
-                maxHp: BattleConstants.DefaultFileMaxHp,
-                maxAp: BattleConstants.DefaultFileMaxAp,
-                attackPower: BattleConstants.DefaultFileAttackPower,
+                maxHp: BattleConstants.DefaultFileMaxHp + modifiers.EnemyHpBonus,
+                maxAp: BattleConstants.DefaultFileMaxAp + modifiers.EnemyApBonus,
+                attackPower: BattleConstants.DefaultFileAttackPower + modifiers.EnemyAttackBonus,
                 displayName: node.Name
             )
         };

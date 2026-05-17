@@ -42,11 +42,13 @@ public partial class MainMenu : Control
     private void RefreshMenu()
     {
         var mission = CampaignState.GetSelectedMission();
+        var modifiers = CampaignState.GetModifiers();
+        var effectiveTurnLimit = Math.Max(3, mission.TurnLimit - modifiers.HeatTurnPenalty);
         _descriptionLabel.Text = "의뢰를 고르고 시스템에 침투해 자료 회수, 삭제, 정찰을 수행한 뒤 보상과 추적 리스크를 관리하는 해커 작전 게임.";
-        _missionTitleLabel.Text = $"{mission.Title} · {mission.ClientName}";
-        _missionBriefingLabel.Text = $"{mission.Briefing}\n\n목표: {mission.ObjectiveType} {mission.TargetPath}\n제한 턴: {mission.TurnLimit}";
-        _missionRewardLabel.Text = $"성공 보상: {mission.RewardCredits} 크레딧 / 평판 +{mission.RewardReputation}\n실패 페널티: {mission.FailurePenaltyCredits} 크레딧 손실 / 추적도 +{mission.FailureHeat}";
-        _operatorStatusLabel.Text = $"크레딧: {CampaignState.Credits}\n평판: {CampaignState.Reputation}\n추적도: {CampaignState.Heat}";
+        _missionTitleLabel.Text = $"{mission.Title} · {mission.Client.Name}";
+        _missionBriefingLabel.Text = $"세력: {mission.Client.Faction}\n브리핑: {mission.Briefing}\n\n목표: {mission.ObjectiveType} {mission.TargetPath}\n기본 제한 턴: {mission.TurnLimit} / 현재 제한 턴: {effectiveTurnLimit}\n의뢰 성향: {mission.Client.Agenda}\n리스크: {mission.Client.RiskNote}";
+        _missionRewardLabel.Text = $"성공 보상: {mission.RewardCredits} 크레딧 / 평판 +{mission.RewardReputation}\n실패 페널티: {mission.FailurePenaltyCredits} 크레딧 손실 / 추적도 +{mission.FailureHeat}\n현재 추적 보정: {modifiers.Summary}";
+        _operatorStatusLabel.Text = $"크레딧: {CampaignState.Credits}\n평판: {CampaignState.Reputation}\n추적도: {CampaignState.Heat}\n적 ATK +{modifiers.EnemyAttackBonus} / 적 AP +{modifiers.EnemyApBonus} / 적 HP +{modifiers.EnemyHpBonus}";
 
         var lastRun = CampaignState.LastMissionResult;
         _lastRunLabel.Text = lastRun == null
