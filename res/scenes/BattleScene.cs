@@ -33,6 +33,8 @@ public partial class BattleScene : Control
     private RichTextLabel _battleLogLabel = null!;
     private GridContainer _actionButtonsContainer = null!;
     private Label _turnCounterLabel = null!;
+    private Label _dungeonInfoLabel = null!;
+    private Label _dungeonEventLabel = null!;
     private Control _battleEndOverlay = null!;
     private Label _battleEndTitleLabel = null!;
     private Label _battleEndSummaryLabel = null!;
@@ -69,6 +71,8 @@ public partial class BattleScene : Control
         _battleLogLabel = GetNode<RichTextLabel>("VBoxContainer/ContentRow/BattleLogPanel/BattleLogMargin/BattleLogVBox/BattleLog");
         _actionButtonsContainer = GetNode<GridContainer>("VBoxContainer/ActionsPanel/ActionsMargin/ActionsVBox/GridContainer");
         _turnCounterLabel = GetNode<Label>("VBoxContainer/TopPanel/TopMargin/TopVBox/TurnCounterLabel");
+        _dungeonInfoLabel = GetNode<Label>("VBoxContainer/TopPanel/TopMargin/TopVBox/DungeonInfoLabel");
+        _dungeonEventLabel = GetNode<Label>("VBoxContainer/TopPanel/TopMargin/TopVBox/DungeonEventLabel");
         _battleEndOverlay = GetNode<Control>("BattleEndOverlay");
         _battleEndTitleLabel = GetNode<Label>("BattleEndOverlay/OverlayCenter/BattleEndPanel/BattleEndMargin/BattleEndVBox/BattleEndTitleLabel");
         _battleEndSummaryLabel = GetNode<Label>("BattleEndOverlay/OverlayCenter/BattleEndPanel/BattleEndMargin/BattleEndVBox/BattleEndSummaryLabel");
@@ -126,11 +130,13 @@ public partial class BattleScene : Control
             _enemyNodes[enemy.Actor.Id] = enemy.NodeData;
         }
 
+        var metadata = _dungeon.GetCurrentMetadata();
         _battleManager.LoadEncounter(
             encounter.Select(item => item.Actor),
-            $"Entered {_dungeon.CurrentFolder.Path}",
+            $"Entered {_dungeon.CurrentFolder.Path} · Theme: {metadata.ThemeName}",
             restorePlayerAp: !isFirstEncounter
         );
+        _battleManager.AddLog($"Event: {metadata.EventSummary}");
     }
 
     public override void _Process(double delta)
@@ -272,7 +278,13 @@ public partial class BattleScene : Control
         _playerApBar.MaxValue = _battleManager.Player.MaxAp;
         _playerApBar.Value = _battleManager.Player.CurrentAp;
         _playerApBar.TooltipText = _playerApLabel.Text;
-        _turnCounterLabel.Text = $"Turn: {_battleManager.TurnCount} / State: {_battleManager.CurrentState} / {_dungeon.CurrentFolder.Path}";
+        var currentMetadata = _dungeon.GetCurrentMetadata();
+        var nextFolder = _dungeon.PeekNextFolder();
+        var nextMetadata = _dungeon.PeekNextMetadata();
+
+        _turnCounterLabel.Text = $"Turn: {_battleManager.TurnCount} / State: {_battleManager.CurrentState}";
+        _dungeonInfoLabel.Text = $"{_dungeon.GetProgressLabel()}\nCurrent: {_dungeon.CurrentFolder.Path}\nNext: {(nextFolder != null ? nextFolder.Path : "Dungeon clear")}";
+        _dungeonEventLabel.Text = $"Theme: {currentMetadata.ThemeName} (Depth {currentMetadata.Depth})\nEvent: {currentMetadata.EventSummary}\nReward: {currentMetadata.RewardPreview}{(nextMetadata != null ? $"\nUp Next: {nextMetadata.ThemeName}" : string.Empty)}";
         _playerStatusLabel.Text = $"Status: {FormatStatusEffects(_battleManager.StatusEffects.GetEffects(_battleManager.Player.Id))}";
 
         var selectedEnemyId = GetSelectedEnemy()?.Id;
@@ -445,7 +457,10 @@ public partial class BattleScene : Control
             ("Readme.txt", "paste"),
             ("Readme.txt", "delete"),
             ("BuildCache", "delete"),
-            ("Temp.tmp", "inspect")
+            ("Temp.tmp", "delete"),
+            ("Assets", "delete"),
+            ("Boss.zip", "delete"),
+            ("Boss.zip", "open")
         };
 
         var executedActions = new List<string>();
@@ -480,7 +495,14 @@ public partial class BattleScene : Control
             }
         }
 
-        GD.Print($"[ProjectFR] Smoke test finished. PlayerAlive={_battleManager.IsPlayerAlive}, RemainingEnemies={_battleManager.Enemies.Count}, Actions=[{string.Join(", ", executedActions)}]");
+        if (!_battleManager.IsBattleEnd || !_battleManager.IsPlayerAlive)
+        {
+            GD.PushError($"[ProjectFR] Smoke test did not fully clear dungeon. BattleEnd={_battleManager.IsBattleEnd}, PlayerAlive={_battleManager.IsPlayerAlive}");
+            GetTree().Quit(1);
+            return;
+        }
+
+        GD.Print($"[ProjectFR] Smoke test finished. PlayerAlive={_battleManager.IsPlayerAlive}, RemainingEnemies={_battleManager.Enemies.Count}, ClearedNodes={_dungeon.ClearedNodeCount}/{_dungeon.TotalNodeCount}, Actions=[{string.Join(", ", executedActions)}]");
         GetTree().Quit(0);
     }
 

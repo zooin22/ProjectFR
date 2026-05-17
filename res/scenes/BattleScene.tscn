@@ -34,7 +34,7 @@ grow_vertical = 2
 theme_override_constants/separation = 16
 
 [node name="TopPanel" type="PanelContainer" parent="VBoxContainer"]
-custom_minimum_size = Vector2(0, 88)
+custom_minimum_size = Vector2(0, 150)
 layout_mode = 2
 
 [node name="TopMargin" type="MarginContainer" parent="VBoxContainer/TopPanel"]
@@ -56,6 +56,16 @@ text = "ProjectFR Battle Test"
 custom_minimum_size = Vector2(0, 28)
 layout_mode = 2
 text = "Turn: 0"
+
+[node name="DungeonInfoLabel" type="Label" parent="VBoxContainer/TopPanel/TopMargin/TopVBox"]
+layout_mode = 2
+text = "Folder: -"
+autowrap_mode = 2
+
+[node name="DungeonEventLabel" type="Label" parent="VBoxContainer/TopPanel/TopMargin/TopVBox"]
+layout_mode = 2
+text = "Theme: -"
+autowrap_mode = 2
 
 [node name="PlayerInfoPanel" type="PanelContainer" parent="VBoxContainer"]
 custom_minimum_size = Vector2(0, 124)
