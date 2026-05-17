@@ -94,7 +94,7 @@ public partial class BattleScene : Control
             {
                 Text = $"{action.DisplayName}\nAP {action.ApCost}",
                 CustomMinimumSize = new Vector2(140, 48),
-                TooltipText = GetTooltipText(action.ActionId)
+                TooltipText = ActionMetadata.GetTooltipText(action.ActionId)
             };
             button.Pressed += () => OnActionButtonPressed(action.ActionId);
             _actionButtonsContainer.AddChild(button);
@@ -104,43 +104,12 @@ public partial class BattleScene : Control
 
     private void InitializeBattle()
     {
-        var player = new ActorState(
-            maxHp: BattleConstants.DefaultPlayerMaxHp,
-            maxAp: BattleConstants.DefaultPlayerMaxAp,
-            attackPower: BattleConstants.DefaultPlayerAttackPower,
-            displayName: BattleConstants.PlayerDisplayName
-        );
-        _battleManager = new BattleManager(player);
+        _battleManager = new BattleManager(BattleFactory.CreateDefaultPlayer());
 
-        AddDummyEnemy(
-            new ActorState(
-                maxHp: BattleConstants.DefaultEnemy1MaxHp,
-                maxAp: BattleConstants.DefaultEnemy1MaxAp,
-                attackPower: BattleConstants.DefaultEnemy1AttackPower,
-                displayName: "Readme.txt"
-            ),
-            new FileNode("Readme.txt", "res://dummy/readme.txt", 4)
-        );
-
-        AddDummyEnemy(
-            new ActorState(
-                maxHp: BattleConstants.DefaultEnemy2MaxHp,
-                maxAp: BattleConstants.DefaultEnemy2MaxAp,
-                attackPower: BattleConstants.DefaultEnemy2AttackPower,
-                displayName: "BuildCache"
-            ),
-            new FolderNode("BuildCache", "res://dummy/buildcache")
-        );
-
-        AddDummyEnemy(
-            new ActorState(
-                maxHp: BattleConstants.DefaultEnemy3MaxHp,
-                maxAp: BattleConstants.DefaultEnemy3MaxAp,
-                attackPower: BattleConstants.DefaultEnemy3AttackPower,
-                displayName: "Boss.zip"
-            ),
-            new SpecialFileNode("Boss.zip", "res://dummy/boss.zip", 16)
-        );
+        foreach (var enemy in BattleFactory.CreateDefaultEnemies())
+        {
+            AddDummyEnemy(enemy.Actor, enemy.NodeData);
+        }
 
         _battleManager.StartBattle();
         _executedPlayerActions.Clear();
@@ -416,7 +385,7 @@ public partial class BattleScene : Control
 
         var totalActions = _executedPlayerActions.Count;
         var uniqueActions = _executedPlayerActions.Distinct().Count();
-        var defeatedEnemies = Math.Max(0, 3 - _battleManager.Enemies.Count);
+        var defeatedEnemies = Math.Max(0, BattleConstants.DefaultEnemyCount - _battleManager.Enemies.Count);
         _battleEndStatsLabel.Text = $"사용 액션 {totalActions}회 · 액션 종류 {uniqueActions}개 · 정리한 적 {defeatedEnemies}체";
     }
 
@@ -615,23 +584,9 @@ public partial class BattleScene : Control
     private static void ApplyActionButtonStyle(Button button, IAction action, bool canExecute)
     {
         button.Modulate = canExecute
-            ? GetActionReadyColor(action.ActionId)
+            ? ActionMetadata.GetReadyColor(action.ActionId)
             : new Color(0.55f, 0.58f, 0.64f, 0.9f);
     }
-
-    private static Color GetActionReadyColor(string actionId) => actionId switch
-    {
-        "open" => new Color(0.47f, 0.78f, 1.0f),
-        "inspect" => new Color(0.76f, 0.67f, 1.0f),
-        "delete" => new Color(1.0f, 0.49f, 0.45f),
-        "copy" => new Color(0.47f, 0.9f, 0.72f),
-        "cut" => new Color(1.0f, 0.64f, 0.4f),
-        "paste" => new Color(0.98f, 0.79f, 0.37f),
-        "clean" => new Color(0.42f, 0.86f, 0.86f),
-        "quarantine" => new Color(0.83f, 0.59f, 1.0f),
-        "compress" => new Color(0.59f, 0.92f, 0.6f),
-        _ => Colors.White
-    };
 
     private bool CanExecuteAction(string actionId)
     {
@@ -642,18 +597,4 @@ public partial class BattleScene : Control
     {
         return OS.GetCmdlineUserArgs().Contains(arg);
     }
-
-    private static string GetTooltipText(string actionId) => actionId switch
-    {
-        "open" => "Basic attack",
-        "inspect" => "Free information check",
-        "delete" => "High damage single target",
-        "copy" => "Copy target to clipboard",
-        "cut" => "Damage and cut target to clipboard",
-        "paste" => "Paste from clipboard with bonus effect",
-        "clean" => "AoE damage + clear own status effects",
-        "quarantine" => "Prevent enemy action",
-        "compress" => "Reduce enemy attack power",
-        _ => string.Empty
-    };
 }
