@@ -34,7 +34,9 @@ public partial class BattleScene : Control
     private Label _battleEndSummaryLabel = null!;
     private Button _restartBattleButton = null!;
     private Button _backToMenuButton = null!;
+    private Label _battleEndStatsLabel = null!;
     private readonly Dictionary<string, Button> _actionButtons = new();
+    private readonly List<string> _executedPlayerActions = new();
     private readonly Dictionary<string, NodeData> _enemyNodes = new();
 
     public override void _Ready()
@@ -64,6 +66,7 @@ public partial class BattleScene : Control
         _battleEndOverlay = GetNode<Control>("BattleEndOverlay");
         _battleEndTitleLabel = GetNode<Label>("BattleEndOverlay/OverlayCenter/BattleEndPanel/BattleEndMargin/BattleEndVBox/BattleEndTitleLabel");
         _battleEndSummaryLabel = GetNode<Label>("BattleEndOverlay/OverlayCenter/BattleEndPanel/BattleEndMargin/BattleEndVBox/BattleEndSummaryLabel");
+        _battleEndStatsLabel = GetNode<Label>("BattleEndOverlay/OverlayCenter/BattleEndPanel/BattleEndMargin/BattleEndVBox/BattleEndStatsLabel");
         _restartBattleButton = GetNode<Button>("BattleEndOverlay/OverlayCenter/BattleEndPanel/BattleEndMargin/BattleEndVBox/BattleEndButtonRow/RestartBattleButton");
         _backToMenuButton = GetNode<Button>("BattleEndOverlay/OverlayCenter/BattleEndPanel/BattleEndMargin/BattleEndVBox/BattleEndButtonRow/BackToMenuButton");
 
@@ -135,6 +138,7 @@ public partial class BattleScene : Control
         );
 
         _battleManager.StartBattle();
+        _executedPlayerActions.Clear();
     }
 
     private void AddDummyEnemy(ActorState enemy, NodeData nodeData)
@@ -221,6 +225,7 @@ public partial class BattleScene : Control
         };
 
         _battleManager.PlayerAction(action, context);
+        _executedPlayerActions.Add(actionId);
         CleanupDefeatedEnemies();
         UpdateUI();
 
@@ -395,6 +400,11 @@ public partial class BattleScene : Control
         _battleEndSummaryLabel.Text = didWin
             ? $"{_battleManager.TurnCount}턴 만에 전투를 정리했어. 다시 플레이하거나 메뉴로 돌아갈 수 있어."
             : "플레이어가 쓰러졌어. 바로 재도전하거나 메뉴로 돌아갈 수 있어.";
+
+        var totalActions = _executedPlayerActions.Count;
+        var uniqueActions = _executedPlayerActions.Distinct().Count();
+        var defeatedEnemies = Math.Max(0, 3 - _battleManager.Enemies.Count);
+        _battleEndStatsLabel.Text = $"사용 액션 {totalActions}회 · 액션 종류 {uniqueActions}개 · 정리한 적 {defeatedEnemies}체";
     }
 
     private void RestartBattle()
@@ -420,10 +430,8 @@ public partial class BattleScene : Control
         {
             ("BuildCache", "copy"),
             ("Boss.zip", "paste"),
-            ("Boss.zip", "compress"),
             ("Boss.zip", "delete"),
-            ("Readme.txt", "cut"),
-            ("BuildCache", "clean")
+            ("Readme.txt", "delete")
         };
 
         var executedActions = new List<string>();

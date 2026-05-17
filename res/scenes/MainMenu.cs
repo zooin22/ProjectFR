@@ -2,11 +2,11 @@ using Godot;
 
 namespace ProjectFR.Scenes;
 
-public partial class MainMenu : Node
+public partial class MainMenu : Control
 {
     public override void _Ready()
     {
-        var startButton = GetNode<Button>("SubViewport/Control/VBoxContainer/StartBattleButton");
+        var startButton = GetNode<Button>("RootMargin/MainVBox/HeroPanel/HeroMargin/HeroVBox/PrimaryButtonRow/StartBattleButton");
         startButton.Pressed += OnStartBattlePressed;
 
         if (HasAutomationArg("--projectfr-autostart-battle"))

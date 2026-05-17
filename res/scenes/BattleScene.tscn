@@ -308,6 +308,12 @@ text = "Victory"
 horizontal_alignment = 1
 autowrap_mode = 2
 
+[node name="BattleEndStatsLabel" type="Label" parent="BattleEndOverlay/OverlayCenter/BattleEndPanel/BattleEndMargin/BattleEndVBox"]
+layout_mode = 2
+text = "사용 액션 0회 · 액션 종류 0개 · 정리한 적 0체"
+horizontal_alignment = 1
+autowrap_mode = 2
+
 [node name="BattleEndButtonRow" type="HBoxContainer" parent="BattleEndOverlay/OverlayCenter/BattleEndPanel/BattleEndMargin/BattleEndVBox"]
 layout_mode = 2
 alignment = 1

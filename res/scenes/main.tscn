@@ -2,58 +2,154 @@
 
 [ext_resource type="Script" path="res://res/scenes/MainMenu.cs" id="1_menu"]
 
-[node name="Main" type="Node"]
-script = ExtResource("1_menu")
-
-[node name="SubViewport" type="SubViewport" parent="."]
-size = Vector2i(1024, 768)
-
-[node name="Control" type="Control" parent="SubViewport"]
+[node name="Main" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_menu")
 
-[node name="Background" type="ColorRect" parent="SubViewport/Control"]
+[node name="Background" type="ColorRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 color = Color(0.0823529, 0.101961, 0.14902, 1)
 
-[node name="VBoxContainer" type="VBoxContainer" parent="SubViewport/Control"]
+[node name="RootMargin" type="MarginContainer" parent="."]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -220.0
-offset_top = -140.0
-offset_right = 220.0
-offset_bottom = 140.0
-theme_override_constants/separation = 18
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 48
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_right = 48
+theme_override_constants/margin_bottom = 40
 
-[node name="TitleLabel" type="Label" parent="SubViewport/Control/VBoxContainer"]
+[node name="MainVBox" type="VBoxContainer" parent="RootMargin"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 20
+
+[node name="HeroPanel" type="PanelContainer" parent="RootMargin/MainVBox"]
+custom_minimum_size = Vector2(0, 220)
+layout_mode = 2
+
+[node name="HeroMargin" type="MarginContainer" parent="RootMargin/MainVBox/HeroPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 24
+
+[node name="HeroVBox" type="VBoxContainer" parent="RootMargin/MainVBox/HeroPanel/HeroMargin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="TitleLabel" type="Label" parent="RootMargin/MainVBox/HeroPanel/HeroMargin/HeroVBox"]
 layout_mode = 2
 text = "ProjectFR"
-horizontal_alignment = 1
 
-[node name="SubtitleLabel" type="Label" parent="SubViewport/Control/VBoxContainer"]
+[node name="SubtitleLabel" type="Label" parent="RootMargin/MainVBox/HeroPanel/HeroMargin/HeroVBox"]
 layout_mode = 2
-text = "파일 시스템 액션으로 싸우는 더미 전투 테스트 화면"
-horizontal_alignment = 1
+text = "파일 시스템 액션으로 싸우는 전투 프로토타입"
+autowrap_mode = 2
 
-[node name="ControlsLabel" type="Label" parent="SubViewport/Control/VBoxContainer"]
+[node name="DescriptionLabel" type="Label" parent="RootMargin/MainVBox/HeroPanel/HeroMargin/HeroVBox"]
 layout_mode = 2
-text = "지금은 버튼 클릭만으로 전투 테스트 가능\n키보드 입력 맵은 나중에 붙이면 됨"
-horizontal_alignment = 1
+text = "지금은 더미 적 3명을 상대로 액션, 상태이상, 로그, 전투 종료 흐름까지 확인할 수 있어."
+autowrap_mode = 2
 
-[node name="StartBattleButton" type="Button" parent="SubViewport/Control/VBoxContainer"]
+[node name="PrimaryButtonRow" type="HBoxContainer" parent="RootMargin/MainVBox/HeroPanel/HeroMargin/HeroVBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="StartBattleButton" type="Button" parent="RootMargin/MainVBox/HeroPanel/HeroMargin/HeroVBox/PrimaryButtonRow"]
+custom_minimum_size = Vector2(180, 48)
 layout_mode = 2
 text = "Start Battle"
 
-[node name="HintLabel" type="Label" parent="SubViewport/Control/VBoxContainer"]
+[node name="SmokeTestLabel" type="Label" parent="RootMargin/MainVBox/HeroPanel/HeroMargin/HeroVBox/PrimaryButtonRow"]
 layout_mode = 2
-text = "실행 후 Start Battle만 누르면 바로 더미 적 3명 상대로 테스트 가능"
-horizontal_alignment = 1
+size_flags_horizontal = 3
+text = "자동 스모크 테스트/콘솔 실행 지원"
+vertical_alignment = 1
+
+autowrap_mode = 2
+
+[node name="InfoRow" type="HBoxContainer" parent="RootMargin/MainVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="BattleInfoPanel" type="PanelContainer" parent="RootMargin/MainVBox/InfoRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="BattleInfoMargin" type="MarginContainer" parent="RootMargin/MainVBox/InfoRow/BattleInfoPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 18
+
+[node name="BattleInfoVBox" type="VBoxContainer" parent="RootMargin/MainVBox/InfoRow/BattleInfoPanel/BattleInfoMargin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="BattleInfoTitleLabel" type="Label" parent="RootMargin/MainVBox/InfoRow/BattleInfoPanel/BattleInfoMargin/BattleInfoVBox"]
+layout_mode = 2
+text = "Current Prototype"
+
+[node name="BattleInfoBodyLabel" type="Label" parent="RootMargin/MainVBox/InfoRow/BattleInfoPanel/BattleInfoMargin/BattleInfoVBox"]
+layout_mode = 2
+text = "• 플레이어 HP/AP 바\n• 적 선택 상세 패널\n• 액션 버튼 상태색\n• 전투 종료 오버레이\n• 로그 컬러 구분"
+autowrap_mode = 2
+
+[node name="ControlsPanel" type="PanelContainer" parent="RootMargin/MainVBox/InfoRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="ControlsMargin" type="MarginContainer" parent="RootMargin/MainVBox/InfoRow/ControlsPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 18
+
+[node name="ControlsVBox" type="VBoxContainer" parent="RootMargin/MainVBox/InfoRow/ControlsPanel/ControlsMargin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="ControlsTitleLabel" type="Label" parent="RootMargin/MainVBox/InfoRow/ControlsPanel/ControlsMargin/ControlsVBox"]
+layout_mode = 2
+text = "Next Build Targets"
+
+[node name="ControlsBodyLabel" type="Label" parent="RootMargin/MainVBox/InfoRow/ControlsPanel/ControlsMargin/ControlsVBox"]
+layout_mode = 2
+text = "• 적 리스트 시각 피드백 강화\n• 액션/상태이상 밸런싱\n• 전투 결과 통계 확장\n• 메인 메뉴/진행 구조 정리"
+autowrap_mode = 2
+
+[node name="HintPanel" type="PanelContainer" parent="RootMargin/MainVBox"]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+
+[node name="HintMargin" type="MarginContainer" parent="RootMargin/MainVBox/HintPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 14
+
+[node name="HintLabel" type="Label" parent="RootMargin/MainVBox/HintPanel/HintMargin"]
+layout_mode = 2
+text = "지금은 전투 프로토타입 검증 단계야. Start Battle로 바로 더미 전투 흐름을 확인하면 돼."
+autowrap_mode = 2
