@@ -290,9 +290,11 @@ public partial class BattleScene : Control
                 _ => "File"
             };
             var effects = _battleManager.StatusEffects.GetEffects(enemy.Id);
+            var threat = GetThreatMarker(enemy, effects, node);
             var statusSuffix = effects.Count > 0 ? $" · {FormatCompactStatusEffects(effects)}" : string.Empty;
-            var display = $"{enemy.DisplayName} [{kind}] - HP {enemy.CurrentHp}/{enemy.MaxHp}, AP {enemy.CurrentAp}/{enemy.MaxAp}{statusSuffix}";
+            var display = $"{threat} {enemy.DisplayName} [{kind}] - HP {enemy.CurrentHp}/{enemy.MaxHp}, AP {enemy.CurrentAp}/{enemy.MaxAp}{statusSuffix}";
             _enemyList.AddItem(display);
+            ApplyEnemyListItemStyle(i, enemy, effects, node);
 
             if (enemy.Id == selectedEnemyId)
                 selectedIndex = i;
@@ -304,6 +306,7 @@ public partial class BattleScene : Control
                 selectedIndex = 0;
 
             _enemyList.Select(selectedIndex);
+            HighlightSelectedEnemy(selectedIndex);
         }
 
         _battleLogLabel.Clear();
@@ -493,6 +496,73 @@ public partial class BattleScene : Control
         }
 
         return false;
+    }
+
+    private void ApplyEnemyListItemStyle(int index, ActorState enemy, IReadOnlyList<StatusEffectInstance> effects, NodeData? node)
+    {
+        _enemyList.SetItemCustomFgColor(index, GetEnemyListColor(enemy, effects, node));
+        _enemyList.SetItemTooltip(index, BuildEnemyTooltip(enemy, effects, node));
+    }
+
+    private void HighlightSelectedEnemy(int selectedIndex)
+    {
+        for (int i = 0; i < _battleManager.Enemies.Count; i++)
+        {
+            var enemy = _battleManager.Enemies[i];
+            var node = _enemyNodes.GetValueOrDefault(enemy.Id);
+            var effects = _battleManager.StatusEffects.GetEffects(enemy.Id);
+            var color = GetEnemyListColor(enemy, effects, node);
+
+            if (i == selectedIndex)
+            {
+                color = color.Lightened(0.2f);
+            }
+
+            _enemyList.SetItemCustomFgColor(i, color);
+        }
+    }
+
+    private static string GetThreatMarker(ActorState enemy, IReadOnlyList<StatusEffectInstance> effects, NodeData? node)
+    {
+        if (effects.Any(effect => effect.Type == StatusEffect.Quarantine))
+            return "◆";
+
+        if (node is SpecialFileNode || enemy.AttackPower >= 3)
+            return "▲";
+
+        if (enemy.CurrentHp <= Math.Max(1, enemy.MaxHp / 3))
+            return "▼";
+
+        return "•";
+    }
+
+    private static Color GetEnemyListColor(ActorState enemy, IReadOnlyList<StatusEffectInstance> effects, NodeData? node)
+    {
+        if (effects.Any(effect => effect.Type == StatusEffect.Quarantine))
+            return new Color(0.82f, 0.67f, 1.0f);
+
+        if (effects.Any(effect => effect.Type == StatusEffect.Compressed))
+            return new Color(0.55f, 0.88f, 0.66f);
+
+        if (node is SpecialFileNode || enemy.AttackPower >= 3)
+            return new Color(1.0f, 0.66f, 0.4f);
+
+        if (enemy.CurrentHp <= Math.Max(1, enemy.MaxHp / 3))
+            return new Color(0.98f, 0.47f, 0.45f);
+
+        return new Color(0.83f, 0.87f, 0.92f);
+    }
+
+    private static string BuildEnemyTooltip(ActorState enemy, IReadOnlyList<StatusEffectInstance> effects, NodeData? node)
+    {
+        var type = node switch
+        {
+            FolderNode => "Folder",
+            SpecialFileNode => "Special File",
+            _ => "File"
+        };
+
+        return $"{enemy.DisplayName}\nType: {type}\nATK: {enemy.AttackPower}\nStatus: {FormatStatusEffects(effects)}";
     }
 
     private static string FormatStatusEffects(IReadOnlyList<StatusEffectInstance> effects)
