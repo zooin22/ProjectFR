@@ -23,8 +23,6 @@ color = Color(0.0784314, 0.0941176, 0.12549, 1)
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
-anchor_left = 0.0
-anchor_top = 0.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 24.0
@@ -37,6 +35,7 @@ theme_override_constants/separation = 16
 
 [node name="TopPanel" type="PanelContainer" parent="VBoxContainer"]
 custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
 
 [node name="TopMargin" type="MarginContainer" parent="VBoxContainer/TopPanel"]
 layout_mode = 2
@@ -59,7 +58,8 @@ layout_mode = 2
 text = "Turn: 0"
 
 [node name="PlayerInfoPanel" type="PanelContainer" parent="VBoxContainer"]
-custom_minimum_size = Vector2(0, 64)
+custom_minimum_size = Vector2(0, 124)
+layout_mode = 2
 
 [node name="PlayerInfoMargin" type="MarginContainer" parent="VBoxContainer/PlayerInfoPanel"]
 layout_mode = 2
@@ -68,75 +68,147 @@ theme_override_constants/margin_top = 12
 theme_override_constants/margin_right = 16
 theme_override_constants/margin_bottom = 12
 
-[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/PlayerInfoPanel/PlayerInfoMargin"]
+[node name="PlayerInfoVBox" type="VBoxContainer" parent="VBoxContainer/PlayerInfoPanel/PlayerInfoMargin"]
 layout_mode = 2
-size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="PlayerHeader" type="HBoxContainer" parent="VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/PlayerInfoVBox"]
+layout_mode = 2
 theme_override_constants/separation = 18
 
-[node name="Label" type="Label" parent="VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/HBoxContainer"]
+[node name="Label" type="Label" parent="VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/PlayerInfoVBox/PlayerHeader"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 text = "Player"
 
-[node name="HPLabel" type="Label" parent="VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/HBoxContainer"]
+[node name="HPLabel" type="Label" parent="VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/PlayerInfoVBox/PlayerHeader"]
 custom_minimum_size = Vector2(180, 0)
 layout_mode = 2
 text = "HP: 30/30"
 
-[node name="APLabel" type="Label" parent="VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/HBoxContainer"]
+[node name="APLabel" type="Label" parent="VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/PlayerInfoVBox/PlayerHeader"]
 custom_minimum_size = Vector2(180, 0)
 layout_mode = 2
 text = "AP: 5/5"
 
-[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+[node name="PlayerBars" type="VBoxContainer" parent="VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/PlayerInfoVBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="HpBar" type="ProgressBar" parent="VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/PlayerInfoVBox/PlayerBars"]
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
+max_value = 30.0
+value = 30.0
+show_percentage = false
+
+[node name="ApBar" type="ProgressBar" parent="VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/PlayerInfoVBox/PlayerBars"]
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
+max_value = 5.0
+value = 5.0
+show_percentage = false
+
+[node name="ContentRow" type="HBoxContainer" parent="VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 16
 
-[node name="EnemyPanel" type="PanelContainer" parent="VBoxContainer/HBoxContainer"]
+[node name="EnemyPanel" type="PanelContainer" parent="VBoxContainer/ContentRow"]
 custom_minimum_size = Vector2(280, 0)
+layout_mode = 2
 size_flags_vertical = 3
 
-[node name="EnemyMargin" type="MarginContainer" parent="VBoxContainer/HBoxContainer/EnemyPanel"]
+[node name="EnemyMargin" type="MarginContainer" parent="VBoxContainer/ContentRow/EnemyPanel"]
 layout_mode = 2
 theme_override_constants/margin_left = 12
 theme_override_constants/margin_top = 12
 theme_override_constants/margin_right = 12
 theme_override_constants/margin_bottom = 12
 
-[node name="EnemyVBox" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/EnemyPanel/EnemyMargin"]
+[node name="EnemyVBox" type="VBoxContainer" parent="VBoxContainer/ContentRow/EnemyPanel/EnemyMargin"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="EnemyTitleLabel" type="Label" parent="VBoxContainer/HBoxContainer/EnemyPanel/EnemyMargin/EnemyVBox"]
+[node name="EnemyTitleLabel" type="Label" parent="VBoxContainer/ContentRow/EnemyPanel/EnemyMargin/EnemyVBox"]
 layout_mode = 2
 text = "Enemies"
 
-[node name="EnemyList" type="ItemList" parent="VBoxContainer/HBoxContainer/EnemyPanel/EnemyMargin/EnemyVBox"]
+[node name="EnemyList" type="ItemList" parent="VBoxContainer/ContentRow/EnemyPanel/EnemyMargin/EnemyVBox"]
 custom_minimum_size = Vector2(0, 280)
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="BattleLogPanel" type="PanelContainer" parent="VBoxContainer/HBoxContainer"]
-size_flags_horizontal = 3
+[node name="EnemyDetailPanel" type="PanelContainer" parent="VBoxContainer/ContentRow"]
+custom_minimum_size = Vector2(240, 0)
+layout_mode = 2
 size_flags_vertical = 3
 
-[node name="BattleLogMargin" type="MarginContainer" parent="VBoxContainer/HBoxContainer/BattleLogPanel"]
+[node name="EnemyDetailMargin" type="MarginContainer" parent="VBoxContainer/ContentRow/EnemyDetailPanel"]
 layout_mode = 2
 theme_override_constants/margin_left = 12
 theme_override_constants/margin_top = 12
 theme_override_constants/margin_right = 12
 theme_override_constants/margin_bottom = 12
 
-[node name="BattleLogVBox" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/BattleLogPanel/BattleLogMargin"]
+[node name="EnemyDetailVBox" type="VBoxContainer" parent="VBoxContainer/ContentRow/EnemyDetailPanel/EnemyDetailMargin"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="BattleLogTitleLabel" type="Label" parent="VBoxContainer/HBoxContainer/BattleLogPanel/BattleLogMargin/BattleLogVBox"]
+[node name="EnemyDetailTitleLabel" type="Label" parent="VBoxContainer/ContentRow/EnemyDetailPanel/EnemyDetailMargin/EnemyDetailVBox"]
+layout_mode = 2
+text = "Selected Target"
+
+[node name="SelectedEnemyNameLabel" type="Label" parent="VBoxContainer/ContentRow/EnemyDetailPanel/EnemyDetailMargin/EnemyDetailVBox"]
+layout_mode = 2
+text = "No target selected"
+
+[node name="SelectedEnemyTypeLabel" type="Label" parent="VBoxContainer/ContentRow/EnemyDetailPanel/EnemyDetailMargin/EnemyDetailVBox"]
+layout_mode = 2
+text = "Type: -"
+
+[node name="SelectedEnemyPathLabel" type="Label" parent="VBoxContainer/ContentRow/EnemyDetailPanel/EnemyDetailMargin/EnemyDetailVBox"]
+layout_mode = 2
+text = "Path: -"
+autowrap_mode = 2
+
+[node name="SelectedEnemyStatsLabel" type="Label" parent="VBoxContainer/ContentRow/EnemyDetailPanel/EnemyDetailMargin/EnemyDetailVBox"]
+layout_mode = 2
+text = "ATK: - · Size: -"
+
+autowrap_mode = 2
+
+[node name="SelectedEnemyHpBar" type="ProgressBar" parent="VBoxContainer/ContentRow/EnemyDetailPanel/EnemyDetailMargin/EnemyDetailVBox"]
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
+show_percentage = false
+
+[node name="SelectedEnemyApBar" type="ProgressBar" parent="VBoxContainer/ContentRow/EnemyDetailPanel/EnemyDetailMargin/EnemyDetailVBox"]
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
+show_percentage = false
+
+[node name="BattleLogPanel" type="PanelContainer" parent="VBoxContainer/ContentRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="BattleLogMargin" type="MarginContainer" parent="VBoxContainer/ContentRow/BattleLogPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="BattleLogVBox" type="VBoxContainer" parent="VBoxContainer/ContentRow/BattleLogPanel/BattleLogMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="BattleLogTitleLabel" type="Label" parent="VBoxContainer/ContentRow/BattleLogPanel/BattleLogMargin/BattleLogVBox"]
 layout_mode = 2
 text = "Battle Log"
 
-[node name="BattleLog" type="RichTextLabel" parent="VBoxContainer/HBoxContainer/BattleLogPanel/BattleLogMargin/BattleLogVBox"]
+[node name="BattleLog" type="RichTextLabel" parent="VBoxContainer/ContentRow/BattleLogPanel/BattleLogMargin/BattleLogVBox"]
 custom_minimum_size = Vector2(0, 280)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -146,6 +218,7 @@ scroll_following = true
 
 [node name="ActionsPanel" type="PanelContainer" parent="VBoxContainer"]
 custom_minimum_size = Vector2(0, 180)
+layout_mode = 2
 
 [node name="ActionsMargin" type="MarginContainer" parent="VBoxContainer/ActionsPanel"]
 layout_mode = 2
@@ -169,6 +242,7 @@ columns = 3
 
 [node name="HintPanel" type="PanelContainer" parent="VBoxContainer"]
 custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
 
 [node name="HintMargin" type="MarginContainer" parent="VBoxContainer/HintPanel"]
 layout_mode = 2

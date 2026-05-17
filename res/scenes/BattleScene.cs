@@ -11,22 +11,27 @@ namespace ProjectFR.Scenes;
 /// <summary>
 /// Battle scene controller - manages the UI and game flow during battle
 /// </summary>
-public partial class BattleScene : Node
+public partial class BattleScene : Control
 {
     private BattleManager _battleManager = null!;
     private ActionRegistry _actionRegistry = null!;
     private Label _playerHpLabel = null!;
     private Label _playerApLabel = null!;
+    private ProgressBar _playerHpBar = null!;
+    private ProgressBar _playerApBar = null!;
     private ItemList _enemyList = null!;
+    private Label _selectedEnemyNameLabel = null!;
+    private Label _selectedEnemyTypeLabel = null!;
+    private Label _selectedEnemyPathLabel = null!;
+    private Label _selectedEnemyStatsLabel = null!;
+    private ProgressBar _selectedEnemyHpBar = null!;
+    private ProgressBar _selectedEnemyApBar = null!;
     private RichTextLabel _battleLogLabel = null!;
     private GridContainer _actionButtonsContainer = null!;
     private Label _turnCounterLabel = null!;
     private readonly Dictionary<string, Button> _actionButtons = new();
     private readonly Dictionary<string, NodeData> _enemyNodes = new();
 
-    /// <summary>
-    /// Called when the scene is ready - initializes UI and battle
-    /// </summary>
     public override void _Ready()
     {
         InitializeUI();
@@ -35,15 +40,20 @@ public partial class BattleScene : Node
         RunSmokeTestIfRequested();
     }
 
-    /// <summary>
-    /// Initializes all UI elements from the scene tree
-    /// </summary>
     private void InitializeUI()
     {
-        _playerHpLabel = GetNode<Label>("VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/HBoxContainer/HPLabel");
-        _playerApLabel = GetNode<Label>("VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/HBoxContainer/APLabel");
-        _enemyList = GetNode<ItemList>("VBoxContainer/HBoxContainer/EnemyPanel/EnemyMargin/EnemyVBox/EnemyList");
-        _battleLogLabel = GetNode<RichTextLabel>("VBoxContainer/HBoxContainer/BattleLogPanel/BattleLogMargin/BattleLogVBox/BattleLog");
+        _playerHpLabel = GetNode<Label>("VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/PlayerInfoVBox/PlayerHeader/HPLabel");
+        _playerApLabel = GetNode<Label>("VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/PlayerInfoVBox/PlayerHeader/APLabel");
+        _playerHpBar = GetNode<ProgressBar>("VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/PlayerInfoVBox/PlayerBars/HpBar");
+        _playerApBar = GetNode<ProgressBar>("VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/PlayerInfoVBox/PlayerBars/ApBar");
+        _enemyList = GetNode<ItemList>("VBoxContainer/ContentRow/EnemyPanel/EnemyMargin/EnemyVBox/EnemyList");
+        _selectedEnemyNameLabel = GetNode<Label>("VBoxContainer/ContentRow/EnemyDetailPanel/EnemyDetailMargin/EnemyDetailVBox/SelectedEnemyNameLabel");
+        _selectedEnemyTypeLabel = GetNode<Label>("VBoxContainer/ContentRow/EnemyDetailPanel/EnemyDetailMargin/EnemyDetailVBox/SelectedEnemyTypeLabel");
+        _selectedEnemyPathLabel = GetNode<Label>("VBoxContainer/ContentRow/EnemyDetailPanel/EnemyDetailMargin/EnemyDetailVBox/SelectedEnemyPathLabel");
+        _selectedEnemyStatsLabel = GetNode<Label>("VBoxContainer/ContentRow/EnemyDetailPanel/EnemyDetailMargin/EnemyDetailVBox/SelectedEnemyStatsLabel");
+        _selectedEnemyHpBar = GetNode<ProgressBar>("VBoxContainer/ContentRow/EnemyDetailPanel/EnemyDetailMargin/EnemyDetailVBox/SelectedEnemyHpBar");
+        _selectedEnemyApBar = GetNode<ProgressBar>("VBoxContainer/ContentRow/EnemyDetailPanel/EnemyDetailMargin/EnemyDetailVBox/SelectedEnemyApBar");
+        _battleLogLabel = GetNode<RichTextLabel>("VBoxContainer/ContentRow/BattleLogPanel/BattleLogMargin/BattleLogVBox/BattleLog");
         _actionButtonsContainer = GetNode<GridContainer>("VBoxContainer/ActionsPanel/ActionsMargin/ActionsVBox/GridContainer");
         _turnCounterLabel = GetNode<Label>("VBoxContainer/TopPanel/TopMargin/TopVBox/TurnCounterLabel");
 
@@ -53,9 +63,6 @@ public partial class BattleScene : Node
         CreateActionButtons();
     }
 
-    /// <summary>
-    /// Creates action buttons dynamically from the action registry
-    /// </summary>
     private void CreateActionButtons()
     {
         _actionRegistry = new ActionRegistry();
@@ -75,9 +82,6 @@ public partial class BattleScene : Node
         }
     }
 
-    /// <summary>
-    /// Initializes the battle with player and enemies
-    /// </summary>
     private void InitializeBattle()
     {
         var player = new ActorState(
@@ -97,7 +101,7 @@ public partial class BattleScene : Node
             ),
             new FileNode("Readme.txt", "res://dummy/readme.txt", 4)
         );
-        
+
         AddDummyEnemy(
             new ActorState(
                 maxHp: BattleConstants.DefaultEnemy2MaxHp,
@@ -107,7 +111,7 @@ public partial class BattleScene : Node
             ),
             new FolderNode("BuildCache", "res://dummy/buildcache")
         );
-        
+
         AddDummyEnemy(
             new ActorState(
                 maxHp: BattleConstants.DefaultEnemy3MaxHp,
@@ -121,32 +125,20 @@ public partial class BattleScene : Node
         _battleManager.StartBattle();
     }
 
-    /// <summary>
-    /// Adds a dummy enemy with associated node data
-    /// </summary>
-    /// <param name="enemy">The enemy actor state</param>
-    /// <param name="nodeData">The file/folder node representing this enemy</param>
     private void AddDummyEnemy(ActorState enemy, NodeData nodeData)
     {
         ArgumentNullException.ThrowIfNull(enemy);
         ArgumentNullException.ThrowIfNull(nodeData);
-        
+
         _battleManager.AddEnemy(enemy);
         _enemyNodes[enemy.Id] = nodeData;
     }
 
-    /// <summary>
-    /// Process function called every frame - handles input
-    /// </summary>
-    /// <param name="delta">Time since last frame in seconds</param>
     public override void _Process(double delta)
     {
         HandleInput();
     }
 
-    /// <summary>
-    /// Handles keyboard input for action execution
-    /// </summary>
     private void HandleInput()
     {
         if (ActionPressed("ui_open"))
@@ -169,29 +161,17 @@ public partial class BattleScene : Node
             OnActionButtonPressed("compress");
     }
 
-    /// <summary>
-    /// Checks if a specified input action was just pressed
-    /// </summary>
-    /// <param name="actionName">The name of the input action to check</param>
-    /// <returns>True if the action was just pressed, false otherwise</returns>
     private static bool ActionPressed(string actionName)
     {
         return InputMap.HasAction(actionName) && Input.IsActionJustPressed(actionName);
     }
 
-    /// <summary>
-    /// Called when an enemy is selected in the enemy list
-    /// </summary>
-    /// <param name="index">The index of the selected enemy</param>
     private void OnEnemySelected(long index)
     {
+        UpdateSelectedEnemyPanel();
         UpdateActionButtons();
     }
 
-    /// <summary>
-    /// Called when an action button is pressed
-    /// </summary>
-    /// <param name="actionId">The ID of the action to execute</param>
     private void OnActionButtonPressed(string actionId)
     {
         ArgumentNullException.ThrowIfNull(actionId);
@@ -235,10 +215,6 @@ public partial class BattleScene : Node
         }
     }
 
-    /// <summary>
-    /// Gets the currently selected enemy from the list
-    /// </summary>
-    /// <returns>The selected enemy actor state, or null if none selected</returns>
     private ActorState? GetSelectedEnemy()
     {
         var selected = _enemyList.GetSelectedItems();
@@ -251,9 +227,6 @@ public partial class BattleScene : Node
             : null;
     }
 
-    /// <summary>
-    /// Removes defeated enemies from the tracking dictionary
-    /// </summary>
     private void CleanupDefeatedEnemies()
     {
         var aliveIds = _battleManager.Enemies.Select(enemy => enemy.Id).ToHashSet();
@@ -264,16 +237,22 @@ public partial class BattleScene : Node
         }
     }
 
-    /// <summary>
-    /// Updates all UI elements to reflect current battle state
-    /// </summary>
     private void UpdateUI()
     {
         _playerHpLabel.Text = $"HP: {_battleManager.Player.CurrentHp}/{_battleManager.Player.MaxHp}";
         _playerApLabel.Text = $"AP: {_battleManager.Player.CurrentAp}/{_battleManager.Player.MaxAp}";
+        _playerHpBar.MaxValue = _battleManager.Player.MaxHp;
+        _playerHpBar.Value = _battleManager.Player.CurrentHp;
+        _playerHpBar.TooltipText = _playerHpLabel.Text;
+        _playerApBar.MaxValue = _battleManager.Player.MaxAp;
+        _playerApBar.Value = _battleManager.Player.CurrentAp;
+        _playerApBar.TooltipText = _playerApLabel.Text;
         _turnCounterLabel.Text = $"Turn: {_battleManager.TurnCount} / State: {_battleManager.CurrentState}";
 
+        var selectedEnemyId = GetSelectedEnemy()?.Id;
+
         _enemyList.Clear();
+        var selectedIndex = -1;
         for (int i = 0; i < _battleManager.Enemies.Count; i++)
         {
             var enemy = _battleManager.Enemies[i];
@@ -286,11 +265,17 @@ public partial class BattleScene : Node
             };
             var display = $"{enemy.DisplayName} [{kind}] - HP {enemy.CurrentHp}/{enemy.MaxHp}, AP {enemy.CurrentAp}/{enemy.MaxAp}";
             _enemyList.AddItem(display);
+
+            if (enemy.Id == selectedEnemyId)
+                selectedIndex = i;
         }
 
         if (_battleManager.Enemies.Count > 0)
         {
-            _enemyList.Select(Mathf.Clamp(_enemyList.GetSelectedItems().FirstOrDefault(), 0, _battleManager.Enemies.Count - 1));
+            if (selectedIndex < 0)
+                selectedIndex = 0;
+
+            _enemyList.Select(selectedIndex);
         }
 
         _battleLogLabel.Clear();
@@ -304,12 +289,49 @@ public partial class BattleScene : Node
             _battleLogLabel.ScrollToLine(_battleLogLabel.GetLineCount() - 1);
         }
 
+        UpdateSelectedEnemyPanel();
         UpdateActionButtons();
     }
 
-    /// <summary>
-    /// Updates the enabled/disabled state of action buttons based on available actions
-    /// </summary>
+    private void UpdateSelectedEnemyPanel()
+    {
+        var selectedEnemy = GetSelectedEnemy() ?? _battleManager.Enemies.FirstOrDefault(e => e.IsAlive);
+        var targetNode = selectedEnemy != null ? _enemyNodes.GetValueOrDefault(selectedEnemy.Id) : null;
+
+        if (selectedEnemy == null || targetNode == null)
+        {
+            _selectedEnemyNameLabel.Text = "No target selected";
+            _selectedEnemyTypeLabel.Text = "Type: -";
+            _selectedEnemyPathLabel.Text = "Path: -";
+            _selectedEnemyStatsLabel.Text = "ATK: - · Size: -";
+            _selectedEnemyHpBar.MaxValue = 1;
+            _selectedEnemyHpBar.Value = 0;
+            _selectedEnemyApBar.MaxValue = 1;
+            _selectedEnemyApBar.Value = 0;
+            return;
+        }
+
+        var kind = targetNode switch
+        {
+            FolderNode => "Folder",
+            SpecialFileNode => "Special File",
+            _ => "File"
+        };
+
+        _selectedEnemyNameLabel.Text = selectedEnemy.DisplayName;
+        _selectedEnemyTypeLabel.Text = $"Type: {kind}";
+        _selectedEnemyPathLabel.Text = $"Path: {targetNode.Path}";
+        _selectedEnemyStatsLabel.Text = $"ATK: {selectedEnemy.AttackPower} · Size: {targetNode.Size}";
+
+        _selectedEnemyHpBar.MaxValue = selectedEnemy.MaxHp;
+        _selectedEnemyHpBar.Value = selectedEnemy.CurrentHp;
+        _selectedEnemyHpBar.TooltipText = $"HP: {selectedEnemy.CurrentHp}/{selectedEnemy.MaxHp}";
+
+        _selectedEnemyApBar.MaxValue = selectedEnemy.MaxAp;
+        _selectedEnemyApBar.Value = selectedEnemy.CurrentAp;
+        _selectedEnemyApBar.TooltipText = $"AP: {selectedEnemy.CurrentAp}/{selectedEnemy.MaxAp}";
+    }
+
     private void UpdateActionButtons()
     {
         var selectedEnemy = GetSelectedEnemy() ?? _battleManager.Enemies.FirstOrDefault(e => e.IsAlive);
@@ -334,9 +356,6 @@ public partial class BattleScene : Node
         }
     }
 
-    /// <summary>
-    /// Called when the battle ends to display victory/defeat message
-    /// </summary>
     private void OnBattleEnd()
     {
         _battleManager.AddLog(_battleManager.IsPlayerAlive
@@ -345,9 +364,6 @@ public partial class BattleScene : Node
         UpdateUI();
     }
 
-    /// <summary>
-    /// Runs a deterministic smoke test when launched with automation arguments.
-    /// </summary>
     private async void RunSmokeTestIfRequested()
     {
         if (!HasAutomationArg("--projectfr-smoke-test"))
@@ -428,11 +444,6 @@ public partial class BattleScene : Node
         return OS.GetCmdlineUserArgs().Contains(arg);
     }
 
-    /// <summary>
-    /// Gets tooltip text for an action based on its ID
-    /// </summary>
-    /// <param name="actionId">The action ID</param>
-    /// <returns>The tooltip text describing the action</returns>
     private static string GetTooltipText(string actionId) => actionId switch
     {
         "open" => "Basic attack",
