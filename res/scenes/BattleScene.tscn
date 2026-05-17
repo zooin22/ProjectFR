@@ -254,3 +254,71 @@ theme_override_constants/margin_bottom = 10
 [node name="HintLabel" type="Label" parent="VBoxContainer/HintPanel/HintMargin"]
 layout_mode = 2
 text = "심플 더미 UI · 적 선택 후 액션 실행 · 자동 스모크 테스트 지원"
+
+[node name="BattleEndOverlay" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="OverlayBackground" type="ColorRect" parent="BattleEndOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.0392157, 0.0470588, 0.0627451, 0.76)
+
+[node name="OverlayCenter" type="CenterContainer" parent="BattleEndOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="BattleEndPanel" type="PanelContainer" parent="BattleEndOverlay/OverlayCenter"]
+custom_minimum_size = Vector2(360, 0)
+layout_mode = 2
+
+[node name="BattleEndMargin" type="MarginContainer" parent="BattleEndOverlay/OverlayCenter/BattleEndPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="BattleEndVBox" type="VBoxContainer" parent="BattleEndOverlay/OverlayCenter/BattleEndPanel/BattleEndMargin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="BattleEndTitleLabel" type="Label" parent="BattleEndOverlay/OverlayCenter/BattleEndPanel/BattleEndMargin/BattleEndVBox"]
+layout_mode = 2
+text = "Battle Finished"
+horizontal_alignment = 1
+
+[node name="BattleEndSummaryLabel" type="Label" parent="BattleEndOverlay/OverlayCenter/BattleEndPanel/BattleEndMargin/BattleEndVBox"]
+layout_mode = 2
+text = "Victory"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="BattleEndButtonRow" type="HBoxContainer" parent="BattleEndOverlay/OverlayCenter/BattleEndPanel/BattleEndMargin/BattleEndVBox"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 12
+
+[node name="RestartBattleButton" type="Button" parent="BattleEndOverlay/OverlayCenter/BattleEndPanel/BattleEndMargin/BattleEndVBox/BattleEndButtonRow"]
+custom_minimum_size = Vector2(140, 44)
+layout_mode = 2
+text = "Restart Battle"
+
+[node name="BackToMenuButton" type="Button" parent="BattleEndOverlay/OverlayCenter/BattleEndPanel/BattleEndMargin/BattleEndVBox/BattleEndButtonRow"]
+custom_minimum_size = Vector2(140, 44)
+layout_mode = 2
+text = "Back to Menu"

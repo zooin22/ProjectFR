@@ -29,6 +29,11 @@ public partial class BattleScene : Control
     private RichTextLabel _battleLogLabel = null!;
     private GridContainer _actionButtonsContainer = null!;
     private Label _turnCounterLabel = null!;
+    private Control _battleEndOverlay = null!;
+    private Label _battleEndTitleLabel = null!;
+    private Label _battleEndSummaryLabel = null!;
+    private Button _restartBattleButton = null!;
+    private Button _backToMenuButton = null!;
     private readonly Dictionary<string, Button> _actionButtons = new();
     private readonly Dictionary<string, NodeData> _enemyNodes = new();
 
@@ -56,9 +61,16 @@ public partial class BattleScene : Control
         _battleLogLabel = GetNode<RichTextLabel>("VBoxContainer/ContentRow/BattleLogPanel/BattleLogMargin/BattleLogVBox/BattleLog");
         _actionButtonsContainer = GetNode<GridContainer>("VBoxContainer/ActionsPanel/ActionsMargin/ActionsVBox/GridContainer");
         _turnCounterLabel = GetNode<Label>("VBoxContainer/TopPanel/TopMargin/TopVBox/TurnCounterLabel");
+        _battleEndOverlay = GetNode<Control>("BattleEndOverlay");
+        _battleEndTitleLabel = GetNode<Label>("BattleEndOverlay/OverlayCenter/BattleEndPanel/BattleEndMargin/BattleEndVBox/BattleEndTitleLabel");
+        _battleEndSummaryLabel = GetNode<Label>("BattleEndOverlay/OverlayCenter/BattleEndPanel/BattleEndMargin/BattleEndVBox/BattleEndSummaryLabel");
+        _restartBattleButton = GetNode<Button>("BattleEndOverlay/OverlayCenter/BattleEndPanel/BattleEndMargin/BattleEndVBox/BattleEndButtonRow/RestartBattleButton");
+        _backToMenuButton = GetNode<Button>("BattleEndOverlay/OverlayCenter/BattleEndPanel/BattleEndMargin/BattleEndVBox/BattleEndButtonRow/BackToMenuButton");
 
         _enemyList.SelectMode = ItemList.SelectModeEnum.Single;
         _enemyList.ItemSelected += OnEnemySelected;
+        _restartBattleButton.Pressed += RestartBattle;
+        _backToMenuButton.Pressed += BackToMenu;
 
         CreateActionButtons();
     }
@@ -141,6 +153,9 @@ public partial class BattleScene : Control
 
     private void HandleInput()
     {
+        if (_battleEndOverlay.Visible)
+            return;
+
         if (ActionPressed("ui_open"))
             OnActionButtonPressed("open");
         else if (ActionPressed("ui_inspect"))
@@ -291,6 +306,7 @@ public partial class BattleScene : Control
 
         UpdateSelectedEnemyPanel();
         UpdateActionButtons();
+        UpdateBattleEndOverlay();
     }
 
     private void UpdateSelectedEnemyPanel()
@@ -362,6 +378,31 @@ public partial class BattleScene : Control
             ? "Victory! File system clean."
             : "Defeat... System compromised.");
         UpdateUI();
+    }
+
+    private void UpdateBattleEndOverlay()
+    {
+        var isBattleEnd = _battleManager.IsBattleEnd;
+        _battleEndOverlay.Visible = isBattleEnd;
+
+        if (!isBattleEnd)
+            return;
+
+        var didWin = _battleManager.IsPlayerAlive;
+        _battleEndTitleLabel.Text = didWin ? "Victory" : "Defeat";
+        _battleEndSummaryLabel.Text = didWin
+            ? $"{_battleManager.TurnCount}턴 만에 전투를 정리했어. 다시 플레이하거나 메뉴로 돌아갈 수 있어."
+            : "플레이어가 쓰러졌어. 바로 재도전하거나 메뉴로 돌아갈 수 있어.";
+    }
+
+    private void RestartBattle()
+    {
+        GetTree().ReloadCurrentScene();
+    }
+
+    private void BackToMenu()
+    {
+        GetTree().ChangeSceneToFile("res://res/scenes/main.tscn");
     }
 
     private async void RunSmokeTestIfRequested()
