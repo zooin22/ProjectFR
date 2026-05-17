@@ -49,31 +49,7 @@ public partial class GameManager : Node
     /// </summary>
     public void StartNewBattle()
     {
-        var player = new ActorState(
-            maxHp: BattleConstants.DefaultPlayerMaxHp,
-            maxAp: BattleConstants.DefaultPlayerMaxAp,
-            attackPower: BattleConstants.DefaultPlayerAttackPower
-        );
-        CurrentBattle = new BattleManager(player);
-
-        CurrentBattle.AddEnemy(new ActorState(
-            maxHp: BattleConstants.DefaultEnemy1MaxHp,
-            maxAp: BattleConstants.DefaultEnemy1MaxAp,
-            attackPower: BattleConstants.DefaultEnemy1AttackPower
-        ));
-        
-        CurrentBattle.AddEnemy(new ActorState(
-            maxHp: BattleConstants.DefaultEnemy2MaxHp,
-            maxAp: BattleConstants.DefaultEnemy2MaxAp,
-            attackPower: BattleConstants.DefaultEnemy2AttackPower
-        ));
-        
-        CurrentBattle.AddEnemy(new ActorState(
-            maxHp: BattleConstants.DefaultEnemy3MaxHp,
-            maxAp: BattleConstants.DefaultEnemy3MaxAp,
-            attackPower: BattleConstants.DefaultEnemy3AttackPower
-        ));
-
+        CurrentBattle = new BattleManager(BattleFactory.CreateDefaultPlayer());
         CurrentBattle.StartBattle();
     }
 

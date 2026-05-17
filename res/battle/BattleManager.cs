@@ -18,6 +18,7 @@ public class BattleManager
     public ActorState Player { get; private set; }
     public List<ActorState> Enemies { get; private set; } = new();
     public int TurnCount { get; private set; } = 0;
+    public bool EndBattleWhenEnemiesCleared { get; set; } = true;
 
     private ActionRegistry _actionRegistry;
     private StatusEffectSystem _statusEffects;
@@ -48,6 +49,30 @@ public class BattleManager
         TurnCount = 0;
         _battleLog.Clear();
         AddLog("Battle started!");
+    }
+
+    public void LoadEncounter(IEnumerable<ActorState> enemies, string encounterLabel, bool restorePlayerAp = true)
+    {
+        Enemies = enemies.ToList();
+
+        if (restorePlayerAp)
+        {
+            Player.RestoreAllAp();
+        }
+
+        foreach (var enemy in Enemies)
+        {
+            enemy.RestoreAllAp();
+        }
+
+        CurrentState = BattleState.PlayerTurn;
+        AddLog(encounterLabel);
+    }
+
+    public void FinishBattle(string message)
+    {
+        AddLog(message);
+        CurrentState = BattleState.BattleEnd;
     }
 
     public void PlayerAction(IAction action, ActionContext context)
@@ -160,7 +185,7 @@ public class BattleManager
             return true;
         }
 
-        if (Enemies.Count == 0)
+        if (Enemies.Count == 0 && EndBattleWhenEnemiesCleared)
         {
             AddLog("All enemies defeated! Victory!");
             return true;

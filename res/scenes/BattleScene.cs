@@ -15,6 +15,7 @@ namespace ProjectFR.Scenes;
 public partial class BattleScene : Control
 {
     private BattleManager _battleManager = null!;
+    private BattleDungeon _dungeon = null!;
     private ActionRegistry _actionRegistry = null!;
     private Label _playerHpLabel = null!;
     private Label _playerApLabel = null!;
@@ -104,24 +105,32 @@ public partial class BattleScene : Control
 
     private void InitializeBattle()
     {
-        _battleManager = new BattleManager(BattleFactory.CreateDefaultPlayer());
-
-        foreach (var enemy in BattleFactory.CreateDefaultEnemies())
+        _dungeon = BattleFactory.CreateDefaultDungeon();
+        _battleManager = new BattleManager(BattleFactory.CreateDefaultPlayer())
         {
-            AddDummyEnemy(enemy.Actor, enemy.NodeData);
-        }
+            EndBattleWhenEnemiesCleared = false
+        };
 
         _battleManager.StartBattle();
+        LoadCurrentEncounter(isFirstEncounter: true);
         _executedPlayerActions.Clear();
     }
 
-    private void AddDummyEnemy(ActorState enemy, NodeData nodeData)
+    private void LoadCurrentEncounter(bool isFirstEncounter = false)
     {
-        ArgumentNullException.ThrowIfNull(enemy);
-        ArgumentNullException.ThrowIfNull(nodeData);
+        _enemyNodes.Clear();
+        var encounter = BattleFactory.CreateEncounter(_dungeon.CurrentFolder);
 
-        _battleManager.AddEnemy(enemy);
-        _enemyNodes[enemy.Id] = nodeData;
+        foreach (var enemy in encounter)
+        {
+            _enemyNodes[enemy.Actor.Id] = enemy.NodeData;
+        }
+
+        _battleManager.LoadEncounter(
+            encounter.Select(item => item.Actor),
+            $"Entered {_dungeon.CurrentFolder.Path}",
+            restorePlayerAp: !isFirstEncounter
+        );
     }
 
     public override void _Process(double delta)
@@ -201,6 +210,13 @@ public partial class BattleScene : Control
         _battleManager.PlayerAction(action, context);
         _executedPlayerActions.Add(actionId);
         CleanupDefeatedEnemies();
+
+        if (TryAdvanceDungeon())
+        {
+            UpdateUI();
+            return;
+        }
+
         UpdateUI();
 
         if (_battleManager.IsBattleEnd)
@@ -231,6 +247,21 @@ public partial class BattleScene : Control
         }
     }
 
+    private bool TryAdvanceDungeon()
+    {
+        if (_battleManager.HasEnemies || _battleManager.IsBattleEnd)
+            return false;
+
+        if (_dungeon.AdvanceAfterCurrentEncounter())
+        {
+            LoadCurrentEncounter();
+            return true;
+        }
+
+        _battleManager.FinishBattle("All folders cleared! Victory!");
+        return false;
+    }
+
     private void UpdateUI()
     {
         _playerHpLabel.Text = $"HP: {_battleManager.Player.CurrentHp}/{_battleManager.Player.MaxHp}";
@@ -241,7 +272,7 @@ public partial class BattleScene : Control
         _playerApBar.MaxValue = _battleManager.Player.MaxAp;
         _playerApBar.Value = _battleManager.Player.CurrentAp;
         _playerApBar.TooltipText = _playerApLabel.Text;
-        _turnCounterLabel.Text = $"Turn: {_battleManager.TurnCount} / State: {_battleManager.CurrentState}";
+        _turnCounterLabel.Text = $"Turn: {_battleManager.TurnCount} / State: {_battleManager.CurrentState} / {_dungeon.CurrentFolder.Path}";
         _playerStatusLabel.Text = $"Status: {FormatStatusEffects(_battleManager.StatusEffects.GetEffects(_battleManager.Player.Id))}";
 
         var selectedEnemyId = GetSelectedEnemy()?.Id;
@@ -385,8 +416,8 @@ public partial class BattleScene : Control
 
         var totalActions = _executedPlayerActions.Count;
         var uniqueActions = _executedPlayerActions.Distinct().Count();
-        var defeatedEnemies = Math.Max(0, BattleConstants.DefaultEnemyCount - _battleManager.Enemies.Count);
-        _battleEndStatsLabel.Text = $"사용 액션 {totalActions}회 · 액션 종류 {uniqueActions}개 · 정리한 적 {defeatedEnemies}체";
+        var clearedNodes = _dungeon.ClearedNodeCount;
+        _battleEndStatsLabel.Text = $"사용 액션 {totalActions}회 · 액션 종류 {uniqueActions}개 · 정리한 노드 {clearedNodes}/{_dungeon.TotalNodeCount}개";
     }
 
     private void RestartBattle()
@@ -411,9 +442,10 @@ public partial class BattleScene : Control
         var scriptedSteps = new (string TargetName, string ActionId)[]
         {
             ("BuildCache", "copy"),
-            ("Boss.zip", "paste"),
-            ("Boss.zip", "delete"),
-            ("Readme.txt", "delete")
+            ("Readme.txt", "paste"),
+            ("Readme.txt", "delete"),
+            ("BuildCache", "delete"),
+            ("Temp.tmp", "inspect")
         };
 
         var executedActions = new List<string>();

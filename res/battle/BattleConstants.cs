@@ -7,26 +7,33 @@ public static class BattleConstants
     public const int DefaultPlayerAttackPower = 4;
     public const string PlayerDisplayName = "Player.exe";
 
-    public const string DefaultEnemy1Name = "Readme.txt";
-    public const string DefaultEnemy1Path = "res://dummy/readme.txt";
-    public const long DefaultEnemy1Size = 4;
-    public const int DefaultEnemy1MaxHp = 10;
-    public const int DefaultEnemy1MaxAp = 3;
-    public const int DefaultEnemy1AttackPower = 2;
+    public const string DungeonRootName = "res://";
+    public const string DungeonRootPath = "res://";
+    public const string RootReadmeName = "Readme.txt";
+    public const string RootReadmePath = "res://Readme.txt";
+    public const long RootReadmeSize = 4;
+    public const string RootBuildCacheName = "BuildCache";
+    public const string RootBuildCachePath = "res://BuildCache";
+    public const string CacheTempName = "Temp.tmp";
+    public const string CacheTempPath = "res://BuildCache/Temp.tmp";
+    public const long CacheTempSize = 3;
+    public const string CacheAssetsName = "Assets";
+    public const string CacheAssetsPath = "res://BuildCache/Assets";
+    public const string BossZipName = "Boss.zip";
+    public const string BossZipPath = "res://BuildCache/Assets/Boss.zip";
+    public const long BossZipSize = 16;
 
-    public const string DefaultEnemy2Name = "BuildCache";
-    public const string DefaultEnemy2Path = "res://dummy/buildcache";
-    public const int DefaultEnemy2MaxHp = 8;
-    public const int DefaultEnemy2MaxAp = 2;
-    public const int DefaultEnemy2AttackPower = 2;
+    public const int DefaultFileMaxHp = 7;
+    public const int DefaultFileMaxAp = 2;
+    public const int DefaultFileAttackPower = 2;
 
-    public const string DefaultEnemy3Name = "Boss.zip";
-    public const string DefaultEnemy3Path = "res://dummy/boss.zip";
-    public const long DefaultEnemy3Size = 16;
-    public const int DefaultEnemy3MaxHp = 15;
-    public const int DefaultEnemy3MaxAp = 4;
-    public const int DefaultEnemy3AttackPower = 3;
+    public const int DefaultFolderMaxHp = 7;
+    public const int DefaultFolderMaxAp = 2;
+    public const int DefaultFolderAttackPower = 2;
 
-    public const int DefaultEnemyCount = 3;
+    public const int DefaultSpecialFileMaxHp = 10;
+    public const int DefaultSpecialFileMaxAp = 3;
+    public const int DefaultSpecialFileAttackPower = 3;
+
     public const int UIBattleLogDisplayLines = 12;
 }
