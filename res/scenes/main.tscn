@@ -58,22 +58,32 @@ text = "ProjectFR"
 
 [node name="SubtitleLabel" type="Label" parent="RootMargin/MainVBox/HeroPanel/HeroMargin/HeroVBox"]
 layout_mode = 2
-text = "파일 시스템 액션으로 싸우는 전투 프로토타입"
+text = "의뢰를 받아 시스템에 침투하는 해커 미션 프로토타입"
 autowrap_mode = 2
 
 [node name="DescriptionLabel" type="Label" parent="RootMargin/MainVBox/HeroPanel/HeroMargin/HeroVBox"]
 layout_mode = 2
-text = "지금은 더미 적 3명을 상대로 액션, 상태이상, 로그, 전투 종료 흐름까지 확인할 수 있어."
+text = "의뢰 요약"
 autowrap_mode = 2
 
 [node name="PrimaryButtonRow" type="HBoxContainer" parent="RootMargin/MainVBox/HeroPanel/HeroMargin/HeroVBox"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
+[node name="PreviousMissionButton" type="Button" parent="RootMargin/MainVBox/HeroPanel/HeroMargin/HeroVBox/PrimaryButtonRow"]
+custom_minimum_size = Vector2(120, 48)
+layout_mode = 2
+text = "Prev Mission"
+
 [node name="StartBattleButton" type="Button" parent="RootMargin/MainVBox/HeroPanel/HeroMargin/HeroVBox/PrimaryButtonRow"]
 custom_minimum_size = Vector2(180, 48)
 layout_mode = 2
-text = "Start Battle"
+text = "Start Mission"
+
+[node name="NextMissionButton" type="Button" parent="RootMargin/MainVBox/HeroPanel/HeroMargin/HeroVBox/PrimaryButtonRow"]
+custom_minimum_size = Vector2(120, 48)
+layout_mode = 2
+text = "Next Mission"
 
 [node name="SmokeTestLabel" type="Label" parent="RootMargin/MainVBox/HeroPanel/HeroMargin/HeroVBox/PrimaryButtonRow"]
 layout_mode = 2
@@ -88,54 +98,69 @@ layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 16
 
-[node name="BattleInfoPanel" type="PanelContainer" parent="RootMargin/MainVBox/InfoRow"]
+[node name="MissionPanel" type="PanelContainer" parent="RootMargin/MainVBox/InfoRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="BattleInfoMargin" type="MarginContainer" parent="RootMargin/MainVBox/InfoRow/BattleInfoPanel"]
+[node name="MissionMargin" type="MarginContainer" parent="RootMargin/MainVBox/InfoRow/MissionPanel"]
 layout_mode = 2
 theme_override_constants/margin_left = 18
 theme_override_constants/margin_top = 18
 theme_override_constants/margin_right = 18
 theme_override_constants/margin_bottom = 18
 
-[node name="BattleInfoVBox" type="VBoxContainer" parent="RootMargin/MainVBox/InfoRow/BattleInfoPanel/BattleInfoMargin"]
+[node name="MissionVBox" type="VBoxContainer" parent="RootMargin/MainVBox/InfoRow/MissionPanel/MissionMargin"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="BattleInfoTitleLabel" type="Label" parent="RootMargin/MainVBox/InfoRow/BattleInfoPanel/BattleInfoMargin/BattleInfoVBox"]
+[node name="MissionTitleLabel" type="Label" parent="RootMargin/MainVBox/InfoRow/MissionPanel/MissionMargin/MissionVBox"]
 layout_mode = 2
-text = "Current Prototype"
+text = "Selected Contract"
 
-[node name="BattleInfoBodyLabel" type="Label" parent="RootMargin/MainVBox/InfoRow/BattleInfoPanel/BattleInfoMargin/BattleInfoVBox"]
+[node name="MissionTitleValueLabel" type="Label" parent="RootMargin/MainVBox/InfoRow/MissionPanel/MissionMargin/MissionVBox"]
 layout_mode = 2
-text = "• 플레이어 HP/AP 바\n• 적 선택 상세 패널\n• 액션 버튼 상태색\n• 전투 종료 오버레이\n• 로그 컬러 구분"
+text = "Mission Name"
 autowrap_mode = 2
 
-[node name="ControlsPanel" type="PanelContainer" parent="RootMargin/MainVBox/InfoRow"]
+[node name="MissionBriefingLabel" type="Label" parent="RootMargin/MainVBox/InfoRow/MissionPanel/MissionMargin/MissionVBox"]
+layout_mode = 2
+text = "Mission Briefing"
+autowrap_mode = 2
+
+[node name="MissionRewardLabel" type="Label" parent="RootMargin/MainVBox/InfoRow/MissionPanel/MissionMargin/MissionVBox"]
+layout_mode = 2
+text = "Reward / Penalty"
+autowrap_mode = 2
+
+[node name="OperatorPanel" type="PanelContainer" parent="RootMargin/MainVBox/InfoRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="ControlsMargin" type="MarginContainer" parent="RootMargin/MainVBox/InfoRow/ControlsPanel"]
+[node name="OperatorMargin" type="MarginContainer" parent="RootMargin/MainVBox/InfoRow/OperatorPanel"]
 layout_mode = 2
 theme_override_constants/margin_left = 18
 theme_override_constants/margin_top = 18
 theme_override_constants/margin_right = 18
 theme_override_constants/margin_bottom = 18
 
-[node name="ControlsVBox" type="VBoxContainer" parent="RootMargin/MainVBox/InfoRow/ControlsPanel/ControlsMargin"]
+[node name="OperatorVBox" type="VBoxContainer" parent="RootMargin/MainVBox/InfoRow/OperatorPanel/OperatorMargin"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="ControlsTitleLabel" type="Label" parent="RootMargin/MainVBox/InfoRow/ControlsPanel/ControlsMargin/ControlsVBox"]
+[node name="OperatorTitleLabel" type="Label" parent="RootMargin/MainVBox/InfoRow/OperatorPanel/OperatorMargin/OperatorVBox"]
 layout_mode = 2
-text = "Next Build Targets"
+text = "Operator Status"
 
-[node name="ControlsBodyLabel" type="Label" parent="RootMargin/MainVBox/InfoRow/ControlsPanel/ControlsMargin/ControlsVBox"]
+[node name="OperatorStatusLabel" type="Label" parent="RootMargin/MainVBox/InfoRow/OperatorPanel/OperatorMargin/OperatorVBox"]
 layout_mode = 2
-text = "• 적 리스트 시각 피드백 강화\n• 액션/상태이상 밸런싱\n• 전투 결과 통계 확장\n• 메인 메뉴/진행 구조 정리"
+text = "크레딧: 0"
+autowrap_mode = 2
+
+[node name="LastRunLabel" type="Label" parent="RootMargin/MainVBox/InfoRow/OperatorPanel/OperatorMargin/OperatorVBox"]
+layout_mode = 2
+text = "최근 작전: 아직 없음"
 autowrap_mode = 2
 
 [node name="HintPanel" type="PanelContainer" parent="RootMargin/MainVBox"]
@@ -151,5 +176,5 @@ theme_override_constants/margin_bottom = 14
 
 [node name="HintLabel" type="Label" parent="RootMargin/MainVBox/HintPanel/HintMargin"]
 layout_mode = 2
-text = "지금은 전투 프로토타입 검증 단계야. Start Battle로 바로 더미 전투 흐름을 확인하면 돼."
+text = "의뢰를 고른 뒤 Start Mission으로 침투를 시작해. 성공하면 크레딧과 평판을 얻고, 실패하면 자금과 추적도에 타격이 온다."
 autowrap_mode = 2

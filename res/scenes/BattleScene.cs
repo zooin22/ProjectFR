@@ -4,6 +4,7 @@ using ProjectFR.Action.Implementations;
 using ProjectFR.Battle;
 using ProjectFR.Data;
 using ProjectFR.Data.Nodes;
+using ProjectFR.Mission;
 using ProjectFR.Systems;
 using System.Threading.Tasks;
 
@@ -44,6 +45,10 @@ public partial class BattleScene : Control
     private readonly Dictionary<string, Button> _actionButtons = new();
     private readonly List<string> _executedPlayerActions = new();
     private readonly Dictionary<string, NodeData> _enemyNodes = new();
+    private MissionData _currentMission = null!;
+    private MissionProgress _missionProgress = null!;
+    private MissionResult? _missionResult;
+    private bool _missionResolved;
 
     public override void _Ready()
     {
@@ -109,6 +114,13 @@ public partial class BattleScene : Control
 
     private void InitializeBattle()
     {
+        CampaignState.EnsureInitialized();
+        CampaignState.BeginSelectedMission();
+        _currentMission = CampaignState.CurrentMission ?? CampaignState.GetSelectedMission();
+        _missionProgress = new MissionProgress(_currentMission);
+        _missionResult = null;
+        _missionResolved = false;
+
         _dungeon = BattleFactory.CreateDefaultDungeon();
         _battleManager = new BattleManager(BattleFactory.CreateDefaultPlayer())
         {
@@ -116,6 +128,7 @@ public partial class BattleScene : Control
         };
 
         _battleManager.StartBattle();
+        _battleManager.AddLog($"Mission accepted: {_currentMission.Title} / Client: {_currentMission.ClientName}");
         LoadCurrentEncounter(isFirstEncounter: true);
         _executedPlayerActions.Clear();
     }
@@ -137,6 +150,7 @@ public partial class BattleScene : Control
             restorePlayerAp: !isFirstEncounter
         );
         _battleManager.AddLog($"Event: {metadata.EventSummary}");
+        _battleManager.AddLog($"Objective: {_currentMission.ObjectiveType} {_currentMission.TargetPath} before turn {_currentMission.TurnLimit}");
     }
 
     public override void _Process(double delta)
@@ -213,8 +227,17 @@ public partial class BattleScene : Control
             TargetNode = _enemyNodes.GetValueOrDefault(target.Id)
         };
 
-        _battleManager.PlayerAction(action, context);
-        _executedPlayerActions.Add(actionId);
+        var result = _battleManager.PlayerAction(action, context);
+        if (result.Success)
+        {
+            _executedPlayerActions.Add(actionId);
+            var missionUpdate = _missionProgress.RegisterAction(actionId, context.TargetNode?.Path);
+            if (!string.IsNullOrWhiteSpace(missionUpdate))
+            {
+                _battleManager.AddLog(missionUpdate);
+            }
+        }
+
         CleanupDefeatedEnemies();
 
         if (TryAdvanceDungeon())
@@ -223,6 +246,7 @@ public partial class BattleScene : Control
             return;
         }
 
+        ApplyMissionFailureChecks();
         UpdateUI();
 
         if (_battleManager.IsBattleEnd)
@@ -268,6 +292,17 @@ public partial class BattleScene : Control
         return false;
     }
 
+    private void ApplyMissionFailureChecks()
+    {
+        if (_battleManager.IsBattleEnd || _missionResolved)
+            return;
+
+        if (_missionProgress.HasExceededTurnLimit(_battleManager.TurnCount))
+        {
+            _battleManager.FinishBattle($"Trace level critical. Turn limit {_currentMission.TurnLimit} exceeded.");
+        }
+    }
+
     private void UpdateUI()
     {
         _playerHpLabel.Text = $"HP: {_battleManager.Player.CurrentHp}/{_battleManager.Player.MaxHp}";
@@ -282,9 +317,9 @@ public partial class BattleScene : Control
         var nextFolder = _dungeon.PeekNextFolder();
         var nextMetadata = _dungeon.PeekNextMetadata();
 
-        _turnCounterLabel.Text = $"Turn: {_battleManager.TurnCount} / State: {_battleManager.CurrentState}";
-        _dungeonInfoLabel.Text = $"{_dungeon.GetProgressLabel()}\nCurrent: {_dungeon.CurrentFolder.Path}\nNext: {(nextFolder != null ? nextFolder.Path : "Dungeon clear")}";
-        _dungeonEventLabel.Text = $"Theme: {currentMetadata.ThemeName} (Depth {currentMetadata.Depth})\nEvent: {currentMetadata.EventSummary}\nReward: {currentMetadata.RewardPreview}{(nextMetadata != null ? $"\nUp Next: {nextMetadata.ThemeName}" : string.Empty)}";
+        _turnCounterLabel.Text = $"Mission: {_currentMission.Title} / Turn: {_battleManager.TurnCount}/{_currentMission.TurnLimit} / State: {_battleManager.CurrentState}";
+        _dungeonInfoLabel.Text = $"Client: {_currentMission.ClientName}\nObjective: {_currentMission.ObjectiveType} {_currentMission.TargetPath}\n{_dungeon.GetProgressLabel()}\nCurrent: {_dungeon.CurrentFolder.Path}\nNext: {(nextFolder != null ? nextFolder.Path : "Dungeon clear")}";
+        _dungeonEventLabel.Text = $"Theme: {currentMetadata.ThemeName} (Depth {currentMetadata.Depth})\nEvent: {currentMetadata.EventSummary}\nReward: {currentMetadata.RewardPreview}{(nextMetadata != null ? $"\nUp Next: {nextMetadata.ThemeName}" : string.Empty)}\nObjective Status: {(_missionProgress.ObjectiveCompleted ? "Complete" : "Pending")}";
         _playerStatusLabel.Text = $"Status: {FormatStatusEffects(_battleManager.StatusEffects.GetEffects(_battleManager.Player.Id))}";
 
         var selectedEnemyId = GetSelectedEnemy()?.Id;
@@ -406,9 +441,17 @@ public partial class BattleScene : Control
 
     private void OnBattleEnd()
     {
-        _battleManager.AddLog(_battleManager.IsPlayerAlive
-            ? "Victory! File system clean."
-            : "Defeat... System compromised.");
+        if (!_missionResolved)
+        {
+            var dungeonCleared = _dungeon.ClearedNodeCount >= _dungeon.TotalNodeCount && !_battleManager.HasEnemies;
+            _missionResult = _missionProgress.Resolve(_battleManager.IsPlayerAlive, dungeonCleared, _battleManager.TurnCount);
+            CampaignState.ApplyMissionResult(_missionResult);
+            _battleManager.AddLog(_missionResult.Success
+                ? $"Mission complete: {_missionResult.Summary}"
+                : $"Mission failed: {_missionResult.Summary}");
+            _missionResolved = true;
+        }
+
         UpdateUI();
     }
 
@@ -420,16 +463,17 @@ public partial class BattleScene : Control
         if (!isBattleEnd)
             return;
 
-        var didWin = _battleManager.IsPlayerAlive;
-        _battleEndTitleLabel.Text = didWin ? "Victory" : "Defeat";
-        _battleEndSummaryLabel.Text = didWin
-            ? $"{_battleManager.TurnCount}턴 만에 전투를 정리했어. 다시 플레이하거나 메뉴로 돌아갈 수 있어."
-            : "플레이어가 쓰러졌어. 바로 재도전하거나 메뉴로 돌아갈 수 있어.";
+        var result = _missionResult;
+        var didWin = result?.Success ?? _battleManager.IsPlayerAlive;
+        _battleEndTitleLabel.Text = didWin ? "Mission Complete" : "Mission Failed";
+        _battleEndSummaryLabel.Text = result?.Summary
+            ?? (didWin ? "Mission resolved." : "Mission failed.");
 
         var totalActions = _executedPlayerActions.Count;
         var uniqueActions = _executedPlayerActions.Distinct().Count();
         var clearedNodes = _dungeon.ClearedNodeCount;
-        _battleEndStatsLabel.Text = $"사용 액션 {totalActions}회 · 액션 종류 {uniqueActions}개 · 정리한 노드 {clearedNodes}/{_dungeon.TotalNodeCount}개";
+        _battleEndStatsLabel.Text = $"사용 액션 {totalActions}회 · 액션 종류 {uniqueActions}개 · 정리한 노드 {clearedNodes}/{_dungeon.TotalNodeCount}개"
+            + (result != null ? $"\n크레딧 {result.CreditsDelta:+#;-#;0} · 평판 {result.ReputationDelta:+#;-#;0} · 추적도 {result.HeatDelta:+#;-#;0}" : string.Empty);
     }
 
     private void RestartBattle()
@@ -459,6 +503,7 @@ public partial class BattleScene : Control
             ("BuildCache", "delete"),
             ("Temp.tmp", "delete"),
             ("Assets", "delete"),
+            ("Boss.zip", "copy"),
             ("Boss.zip", "delete"),
             ("Boss.zip", "open")
         };

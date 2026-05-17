@@ -75,12 +75,13 @@ public class BattleManager
         CurrentState = BattleState.BattleEnd;
     }
 
-    public void PlayerAction(IAction action, ActionContext context)
+    public ActionResult PlayerAction(IAction action, ActionContext context)
     {
         if (CurrentState != BattleState.PlayerTurn)
         {
-            AddLog("Not player's turn!");
-            return;
+            var invalidTurnResult = new ActionResult(false, "Not player's turn!");
+            AddLog(invalidTurnResult.Message);
+            return invalidTurnResult;
         }
 
         context.Clipboard = _clipboard;
@@ -91,9 +92,10 @@ public class BattleManager
         AddLog($"Player: {result.Message}");
 
         if (!result.Success)
-            return;
+            return result;
 
         EndPlayerTurn();
+        return result;
     }
 
     public void EndPlayerTurn()
