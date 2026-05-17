@@ -7,7 +7,7 @@ public class CopyAction : IAction
 {
     public string ActionId => "copy";
     public string DisplayName => "Copy (Ctrl+C)";
-    public int ApCost => 1;
+    public int ApCost => ActionConstants.CopyActionApCost;
     public TargetType Scope => TargetType.Single;
     public List<IActionCondition> Conditions { get; }
 
@@ -15,7 +15,7 @@ public class CopyAction : IAction
     {
         Conditions = new()
         {
-            new MinApCondition(1)
+            new MinApCondition(ActionConstants.CopyActionApCost)
         };
     }
 

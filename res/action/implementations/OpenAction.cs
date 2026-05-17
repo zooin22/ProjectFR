@@ -8,7 +8,7 @@ public class OpenAction : IAction
 {
     public string ActionId => "open";
     public string DisplayName => "Open (Enter)";
-    public int ApCost => 1;
+    public int ApCost => ActionConstants.OpenActionApCost;
     public TargetType Scope => TargetType.Single;
     public List<IActionCondition> Conditions { get; }
 
@@ -16,7 +16,7 @@ public class OpenAction : IAction
     {
         Conditions = new()
         {
-            new MinApCondition(1),
+            new MinApCondition(ActionConstants.OpenActionApCost),
             new TargetAliveCondition()
         };
     }
@@ -33,7 +33,9 @@ public class OpenAction : IAction
 
         context.Actor.ConsumeAp(ApCost);
 
-        int damage = context.TargetNode is FolderNode ? 0 : 3;
+        int damage = context.TargetNode is FolderNode
+            ? ActionConstants.OpenFolderDamage
+            : ActionConstants.OpenFileDamage;
 
         if (context.Target != null)
         {

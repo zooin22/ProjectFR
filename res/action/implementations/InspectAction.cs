@@ -7,7 +7,7 @@ public class InspectAction : IAction
 {
     public string ActionId => "inspect";
     public string DisplayName => "Inspect (Alt+Enter)";
-    public int ApCost => 0;
+    public int ApCost => ActionConstants.InspectActionApCost;
     public TargetType Scope => TargetType.Single;
     public List<IActionCondition> Conditions { get; }
 

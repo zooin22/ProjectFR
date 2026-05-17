@@ -8,7 +8,7 @@ public class CompressAction : IAction
 {
     public string ActionId => "compress";
     public string DisplayName => "Compress (M)";
-    public int ApCost => 2;
+    public int ApCost => ActionConstants.CompressActionApCost;
     public TargetType Scope => TargetType.Single;
     public List<IActionCondition> Conditions { get; }
 
@@ -16,7 +16,7 @@ public class CompressAction : IAction
     {
         Conditions = new()
         {
-            new MinApCondition(2),
+            new MinApCondition(ActionConstants.CompressActionApCost),
             new TargetAliveCondition()
         };
     }
@@ -39,10 +39,10 @@ public class CompressAction : IAction
         context.StatusEffects.AddEffect(
             context.Target.Id,
             StatusEffect.Compressed,
-            4,
-            -2
+            ActionConstants.CompressEffectDuration,
+            ActionConstants.CompressAttackModifier
         );
 
-        return new ActionResult(true, $"Compressed {context.TargetNode?.Name} reducing attack by 2 for 4 turns");
+        return new ActionResult(true, $"Compressed {context.TargetNode?.Name} reducing attack by {Math.Abs(ActionConstants.CompressAttackModifier)} for {ActionConstants.CompressEffectDuration} turns");
     }
 }

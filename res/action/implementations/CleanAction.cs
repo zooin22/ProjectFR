@@ -8,7 +8,7 @@ public class CleanAction : IAction
 {
     public string ActionId => "clean";
     public string DisplayName => "Clean (L)";
-    public int ApCost => 3;
+    public int ApCost => ActionConstants.CleanActionApCost;
     public TargetType Scope => TargetType.AoE;
     public List<IActionCondition> Conditions { get; }
 
@@ -16,7 +16,7 @@ public class CleanAction : IAction
     {
         Conditions = new()
         {
-            new MinApCondition(3)
+            new MinApCondition(ActionConstants.CleanActionApCost)
         };
     }
 
@@ -31,7 +31,7 @@ public class CleanAction : IAction
             return new ActionResult(false, "Cannot execute Clean action");
 
         context.Actor.ConsumeAp(ApCost);
-        int damage = 2;
+        int damage = ActionConstants.CleanDamage;
 
         if (context.AllActors != null)
         {

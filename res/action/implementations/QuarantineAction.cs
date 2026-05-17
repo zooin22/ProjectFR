@@ -8,7 +8,7 @@ public class QuarantineAction : IAction
 {
     public string ActionId => "quarantine";
     public string DisplayName => "Quarantine (Q)";
-    public int ApCost => 2;
+    public int ApCost => ActionConstants.QuarantineActionApCost;
     public TargetType Scope => TargetType.Single;
     public List<IActionCondition> Conditions { get; }
 
@@ -16,7 +16,7 @@ public class QuarantineAction : IAction
     {
         Conditions = new()
         {
-            new MinApCondition(2),
+            new MinApCondition(ActionConstants.QuarantineActionApCost),
             new TargetAliveCondition()
         };
     }
@@ -39,9 +39,9 @@ public class QuarantineAction : IAction
         context.StatusEffects.AddEffect(
             context.Target.Id,
             StatusEffect.Quarantine,
-            3
+            ActionConstants.QuarantineEffectDuration
         );
 
-        return new ActionResult(true, $"Quarantined {context.TargetNode?.Name} for 3 turns");
+        return new ActionResult(true, $"Quarantined {context.TargetNode?.Name} for {ActionConstants.QuarantineEffectDuration} turns");
     }
 }

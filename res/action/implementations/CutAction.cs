@@ -7,7 +7,7 @@ public class CutAction : IAction
 {
     public string ActionId => "cut";
     public string DisplayName => "Cut (Ctrl+X)";
-    public int ApCost => 2;
+    public int ApCost => ActionConstants.CutActionApCost;
     public TargetType Scope => TargetType.Single;
     public List<IActionCondition> Conditions { get; }
 
@@ -15,7 +15,7 @@ public class CutAction : IAction
     {
         Conditions = new()
         {
-            new MinApCondition(2),
+            new MinApCondition(ActionConstants.CutActionApCost),
             new TargetAliveCondition()
         };
     }
@@ -34,7 +34,7 @@ public class CutAction : IAction
             return new ActionResult(false, "No valid target");
 
         context.Actor.ConsumeAp(ApCost);
-        int damage = 4;
+        int damage = ActionConstants.CutDamage;
 
         context.Target.TakeDamage(damage);
 

@@ -7,7 +7,7 @@ public class DeleteAction : IAction
 {
     public string ActionId => "delete";
     public string DisplayName => "Delete";
-    public int ApCost => 2;
+    public int ApCost => ActionConstants.DeleteActionApCost;
     public TargetType Scope => TargetType.Single;
     public List<IActionCondition> Conditions { get; }
 
@@ -15,7 +15,7 @@ public class DeleteAction : IAction
     {
         Conditions = new()
         {
-            new MinApCondition(2),
+            new MinApCondition(ActionConstants.DeleteActionApCost),
             new TargetAliveCondition()
         };
     }
@@ -31,7 +31,7 @@ public class DeleteAction : IAction
             return new ActionResult(false, "Cannot execute Delete action");
 
         context.Actor.ConsumeAp(ApCost);
-        int damage = 8;
+        int damage = ActionConstants.DeleteDamage;
 
         if (context.Target != null)
         {
