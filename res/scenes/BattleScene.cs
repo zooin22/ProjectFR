@@ -4,6 +4,7 @@ using ProjectFR.Action.Implementations;
 using ProjectFR.Battle;
 using ProjectFR.Data;
 using ProjectFR.Data.Nodes;
+using System.Threading.Tasks;
 
 namespace ProjectFR.Scenes;
 
@@ -31,6 +32,7 @@ public partial class BattleScene : Node
         InitializeUI();
         InitializeBattle();
         UpdateUI();
+        RunSmokeTestIfRequested();
     }
 
     /// <summary>
@@ -341,6 +343,89 @@ public partial class BattleScene : Node
             ? "Victory! File system clean."
             : "Defeat... System compromised.");
         UpdateUI();
+    }
+
+    /// <summary>
+    /// Runs a deterministic smoke test when launched with automation arguments.
+    /// </summary>
+    private async void RunSmokeTestIfRequested()
+    {
+        if (!HasAutomationArg("--projectfr-smoke-test"))
+            return;
+
+        GD.Print("[ProjectFR] Smoke test starting.");
+
+        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+
+        var scriptedSteps = new (string TargetName, string ActionId)[]
+        {
+            ("BuildCache", "copy"),
+            ("Boss.zip", "paste"),
+            ("Boss.zip", "compress"),
+            ("Boss.zip", "delete"),
+            ("Readme.txt", "cut"),
+            ("BuildCache", "clean")
+        };
+
+        var executedActions = new List<string>();
+
+        foreach (var step in scriptedSteps)
+        {
+            if (!TrySelectEnemy(step.TargetName))
+            {
+                GD.PushError($"[ProjectFR] Smoke test target not found: {step.TargetName}");
+                GetTree().Quit(1);
+                return;
+            }
+
+            if (!CanExecuteAction(step.ActionId))
+            {
+                GD.PushError($"[ProjectFR] Smoke test action unavailable: {step.ActionId} on {step.TargetName}");
+                GetTree().Quit(1);
+                return;
+            }
+
+            executedActions.Add($"{step.ActionId}@{step.TargetName}");
+            GD.Print($"[ProjectFR] Smoke action: {step.ActionId} -> {step.TargetName}");
+            OnActionButtonPressed(step.ActionId);
+
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+
+            if (!_battleManager.IsPlayerAlive)
+            {
+                GD.PushError("[ProjectFR] Smoke test ended with player defeat.");
+                GetTree().Quit(1);
+                return;
+            }
+        }
+
+        GD.Print($"[ProjectFR] Smoke test finished. PlayerAlive={_battleManager.IsPlayerAlive}, RemainingEnemies={_battleManager.Enemies.Count}, Actions=[{string.Join(", ", executedActions)}]");
+        GetTree().Quit(0);
+    }
+
+    private bool TrySelectEnemy(string displayName)
+    {
+        for (int index = 0; index < _battleManager.Enemies.Count; index++)
+        {
+            if (_battleManager.Enemies[index].DisplayName != displayName)
+                continue;
+
+            _enemyList.Select(index);
+            OnEnemySelected(index);
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool CanExecuteAction(string actionId)
+    {
+        return _actionButtons.TryGetValue(actionId, out var button) && !button.Disabled;
+    }
+
+    private static bool HasAutomationArg(string arg)
+    {
+        return OS.GetCmdlineUserArgs().Contains(arg);
     }
 
     /// <summary>
