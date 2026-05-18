@@ -488,20 +488,55 @@ C:/Users/Admin/Finance/Payroll
 | Decoy Copy | 복사 시 원본 위치에 미끼 생성 |
 | Memory Leak | 클립보드가 가득 차면 주변 보안 모듈 교란 |
 
-### 9.8 창 여러 개
+### 9.8 멀티 윈도우 작전
 
-중후반 확장 시스템으로 여러 탐색기 창을 활용할 수 있다.
+ProjectFR의 멀티윈도우는 단순 연출이 아니라 **핵심 전술 시스템**이다.
 
-예시:
+기본 원칙:
 
-- 현재 침투 창
-- temp 폴더 창
-- backup 폴더 창
-- log viewer 창
-- clipboard 창
+- 해커는 한 창만 띄워두지 않는다.
+- 각 창은 별도 작업 맥락과 역할을 가진다.
+- 창을 늘릴수록 선택지는 늘지만 관리 리스크도 커진다.
+- 멀티윈도우는 중후반 확장이 아니라, 초반부터 단계적으로 열리는 핵심 감각으로 본다.
+
+창 예시:
+
+- Main Infiltration Window
+- Clipboard Window
+- Temp Window
+- Log Viewer Window
+- Backup Window
+- Archive Window
+
+각 창의 역할:
+
+| 창 | 역할 | 전술 의미 |
+|---|---|---|
+| Main Infiltration | 현재 침투 경로 탐색 | 기본 전술 공간 |
+| Clipboard | 복사 대상 관리 | 회수/운반/은닉 흐름 분리 |
+| Temp | 임시 저장/경유 | Trace 정리, 미끼 보관 |
+| Log Viewer | 접근 기록 조작 | Search/Copy 후 흔적 관리 |
+| Backup | 복원 서비스 대응 | 삭제/변조 후 원복 차단 |
+| Archive | 압축 내부 조작 | 스캔 회피, 은닉 운반 |
+
+운영 규칙:
+
+- 동시에 열린 창 수는 자원이다.
+- 포커스된 창에서만 직접 명령을 내릴 수 있다.
+- 창 열기/전환/동시 유지에는 Trace 또는 Alert 비용이 붙을 수 있다.
+- 일부 보안 모듈은 특정 창을 강제로 잠그거나 닫을 수 있다.
 
 플레이 예시:  
-main server 창에서 payroll.csv 복사 → temp 창으로 붙여넣기 → log viewer에서 접근 기록 위조 → backup 창에서 복원 프로세스 방해
+main server 창에서 payroll.csv 복사 → clipboard 창에서 보관 확인 → temp 창으로 붙여넣기 → log viewer에서 접근 기록 위조 → backup 창에서 복원 프로세스 방해
+
+1차 구현 우선순위:
+
+1. Clipboard Window
+2. Temp Window
+3. Log Viewer Window
+
+즉, 목표는 한 화면 안에서 명령만 누르는 것이 아니라,
+**여러 창을 오가며 침투 흐름을 병렬 운영하는 해커식 작전 감각**을 만드는 것이다.
 
 ### 9.9 작업 관리자
 
