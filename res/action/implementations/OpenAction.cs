@@ -33,9 +33,12 @@ public class OpenAction : IAction
 
         context.Actor.ConsumeAp(ApCost);
 
-        int damage = context.TargetNode is FolderNode
-            ? ActionConstants.OpenFolderDamage
-            : ActionConstants.OpenFileDamage;
+        if (context.TargetNode is ContainerNode)
+        {
+            return new ActionResult(true, $"Opened {context.TargetNode.Name}");
+        }
+
+        int damage = ActionConstants.OpenFileDamage;
 
         if (context.Target != null)
         {

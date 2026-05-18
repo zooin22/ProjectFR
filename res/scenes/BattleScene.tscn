@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://daw0c1n1jwfqrf4h"]
 
-[ext_resource type="Script" path="res://res/scenes/BattleScene.cs" id="1_3h6bd"]
+[ext_resource type="Script" path="res://res/scenes/BattleScene.cs" id="1_battle"]
 
 [node name="BattleScene" type="Control"]
 layout_mode = 3
@@ -9,7 +9,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_3h6bd")
+script = ExtResource("1_battle")
 
 [node name="Background" type="ColorRect" parent="."]
 layout_mode = 1
@@ -18,262 +18,583 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.0784314, 0.0941176, 0.12549, 1)
+color = Color(0.145098, 0.164706, 0.192157, 1)
 
-[node name="VBoxContainer" type="VBoxContainer" parent="."]
+[node name="RootMargin" type="MarginContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 24.0
-offset_top = 24.0
-offset_right = -24.0
-offset_bottom = -24.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 16
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 18
 
-[node name="TopPanel" type="PanelContainer" parent="VBoxContainer"]
-custom_minimum_size = Vector2(0, 150)
+[node name="MainVBox" type="VBoxContainer" parent="RootMargin"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="TopPanel" type="PanelContainer" parent="RootMargin/MainVBox"]
+custom_minimum_size = Vector2(0, 168)
 layout_mode = 2
 
-[node name="TopMargin" type="MarginContainer" parent="VBoxContainer/TopPanel"]
+[node name="TopMargin" type="MarginContainer" parent="RootMargin/MainVBox/TopPanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_top = 14
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_bottom = 14
-
-[node name="TopVBox" type="VBoxContainer" parent="VBoxContainer/TopPanel/TopMargin"]
-layout_mode = 2
-theme_override_constants/separation = 6
-
-[node name="TitleLabel" type="Label" parent="VBoxContainer/TopPanel/TopMargin/TopVBox"]
-layout_mode = 2
-text = "ProjectFR Battle Test"
-
-[node name="TurnCounterLabel" type="Label" parent="VBoxContainer/TopPanel/TopMargin/TopVBox"]
-custom_minimum_size = Vector2(0, 28)
-layout_mode = 2
-text = "Turn: 0"
-
-[node name="DungeonInfoLabel" type="Label" parent="VBoxContainer/TopPanel/TopMargin/TopVBox"]
-layout_mode = 2
-text = "Folder: -"
-autowrap_mode = 2
-
-[node name="DungeonEventLabel" type="Label" parent="VBoxContainer/TopPanel/TopMargin/TopVBox"]
-layout_mode = 2
-text = "Theme: -"
-autowrap_mode = 2
-
-[node name="PlayerInfoPanel" type="PanelContainer" parent="VBoxContainer"]
-custom_minimum_size = Vector2(0, 124)
-layout_mode = 2
-
-[node name="PlayerInfoMargin" type="MarginContainer" parent="VBoxContainer/PlayerInfoPanel"]
-layout_mode = 2
-theme_override_constants/margin_left = 16
+theme_override_constants/margin_left = 14
 theme_override_constants/margin_top = 12
-theme_override_constants/margin_right = 16
+theme_override_constants/margin_right = 14
 theme_override_constants/margin_bottom = 12
 
-[node name="PlayerInfoVBox" type="VBoxContainer" parent="VBoxContainer/PlayerInfoPanel/PlayerInfoMargin"]
+[node name="TopVBox" type="VBoxContainer" parent="RootMargin/MainVBox/TopPanel/TopMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="WindowHeaderRow" type="HBoxContainer" parent="RootMargin/MainVBox/TopPanel/TopMargin/TopVBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="HeaderLabel" type="Label" parent="RootMargin/MainVBox/TopPanel/TopMargin/TopVBox/WindowHeaderRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "ProjectFR Explorer"
+
+[node name="WindowStateLabel" type="Label" parent="RootMargin/MainVBox/TopPanel/TopMargin/TopVBox/WindowHeaderRow"]
+layout_mode = 2
+text = "Desktop Build"
+
+[node name="ToolbarRow" type="HBoxContainer" parent="RootMargin/MainVBox/TopPanel/TopMargin/TopVBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="BackStub" type="Button" parent="RootMargin/MainVBox/TopPanel/TopMargin/TopVBox/ToolbarRow"]
+custom_minimum_size = Vector2(36, 30)
+layout_mode = 2
+text = "←"
+
+[node name="ForwardStub" type="Button" parent="RootMargin/MainVBox/TopPanel/TopMargin/TopVBox/ToolbarRow"]
+custom_minimum_size = Vector2(36, 30)
+layout_mode = 2
+text = "→"
+
+[node name="RefreshStub" type="Button" parent="RootMargin/MainVBox/TopPanel/TopMargin/TopVBox/ToolbarRow"]
+custom_minimum_size = Vector2(36, 30)
+layout_mode = 2
+text = "⟳"
+
+[node name="ToolbarSpacer" type="Control" parent="RootMargin/MainVBox/TopPanel/TopMargin/TopVBox/ToolbarRow"]
+custom_minimum_size = Vector2(12, 0)
+layout_mode = 2
+
+[node name="MissionChip" type="Label" parent="RootMargin/MainVBox/TopPanel/TopMargin/TopVBox/ToolbarRow"]
+layout_mode = 2
+text = "Mission Session"
+
+[node name="AddressRow" type="HBoxContainer" parent="RootMargin/MainVBox/TopPanel/TopMargin/TopVBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="AddressLabel" type="Label" parent="RootMargin/MainVBox/TopPanel/TopMargin/TopVBox/AddressRow"]
+custom_minimum_size = Vector2(70, 0)
+layout_mode = 2
+text = "Address"
+
+[node name="PathLabel" type="Label" parent="RootMargin/MainVBox/TopPanel/TopMargin/TopVBox/AddressRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Path: res://"
+autowrap_mode = 2
+
+[node name="SearchStub" type="LineEdit" parent="RootMargin/MainVBox/TopPanel/TopMargin/TopVBox/AddressRow"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+editable = false
+placeholder_text = "Search current container"
+
+[node name="MissionLabel" type="Label" parent="RootMargin/MainVBox/TopPanel/TopMargin/TopVBox"]
+layout_mode = 2
+text = "Mission"
+autowrap_mode = 2
+
+[node name="StatusRow" type="HBoxContainer" parent="RootMargin/MainVBox/TopPanel/TopMargin/TopVBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="TurnStateLabel" type="Label" parent="RootMargin/MainVBox/TopPanel/TopMargin/TopVBox/StatusRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Turn / State"
+autowrap_mode = 2
+
+[node name="TraceRow" type="HBoxContainer" parent="RootMargin/MainVBox/TopPanel/TopMargin/TopVBox/StatusRow"]
+custom_minimum_size = Vector2(340, 0)
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TraceBar" type="ProgressBar" parent="RootMargin/MainVBox/TopPanel/TopMargin/TopVBox/StatusRow/TraceRow"]
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 100.0
+show_percentage = false
+
+[node name="TraceLabel" type="Label" parent="RootMargin/MainVBox/TopPanel/TopMargin/TopVBox/StatusRow/TraceRow"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+text = "TRACE"
+
+[node name="MainSplit" type="HBoxContainer" parent="RootMargin/MainVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="FolderTreePanel" type="PanelContainer" parent="RootMargin/MainVBox/MainSplit"]
+custom_minimum_size = Vector2(230, 0)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="FolderTreeMargin" type="MarginContainer" parent="RootMargin/MainVBox/MainSplit/FolderTreePanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="FolderTreeVBox" type="VBoxContainer" parent="RootMargin/MainVBox/MainSplit/FolderTreePanel/FolderTreeMargin"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="FolderTreeTitleRow" type="HBoxContainer" parent="RootMargin/MainVBox/MainSplit/FolderTreePanel/FolderTreeMargin/FolderTreeVBox"]
+layout_mode = 2
+
+[node name="FolderTreeTitle" type="Label" parent="RootMargin/MainVBox/MainSplit/FolderTreePanel/FolderTreeMargin/FolderTreeVBox/FolderTreeTitleRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Quick Access"
+
+[node name="FolderTreeMeta" type="Label" parent="RootMargin/MainVBox/MainSplit/FolderTreePanel/FolderTreeMargin/FolderTreeVBox/FolderTreeTitleRow"]
+layout_mode = 2
+text = "Folders"
+
+[node name="FolderTree" type="Tree" parent="RootMargin/MainVBox/MainSplit/FolderTreePanel/FolderTreeMargin/FolderTreeVBox"]
+custom_minimum_size = Vector2(0, 456)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="FolderHintLabel" type="Label" parent="RootMargin/MainVBox/MainSplit/FolderTreePanel/FolderTreeMargin/FolderTreeVBox"]
+layout_mode = 2
+text = "폴더를 선택해 현재 작업 위치를 바꿔." 
+autowrap_mode = 2
+
+[node name="ExplorerPanel" type="PanelContainer" parent="RootMargin/MainVBox/MainSplit"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="ExplorerMargin" type="MarginContainer" parent="RootMargin/MainVBox/MainSplit/ExplorerPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="ExplorerVBox" type="VBoxContainer" parent="RootMargin/MainVBox/MainSplit/ExplorerPanel/ExplorerMargin"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="ExplorerHeaderRow" type="HBoxContainer" parent="RootMargin/MainVBox/MainSplit/ExplorerPanel/ExplorerMargin/ExplorerVBox"]
+layout_mode = 2
+
+[node name="ExplorerTitle" type="Label" parent="RootMargin/MainVBox/MainSplit/ExplorerPanel/ExplorerMargin/ExplorerVBox/ExplorerHeaderRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Files"
+
+[node name="ExplorerViewMeta" type="Label" parent="RootMargin/MainVBox/MainSplit/ExplorerPanel/ExplorerMargin/ExplorerVBox/ExplorerHeaderRow"]
+layout_mode = 2
+text = "Large Icon Tactical View"
+
+[node name="ExplorerSubToolbar" type="HBoxContainer" parent="RootMargin/MainVBox/MainSplit/ExplorerPanel/ExplorerMargin/ExplorerVBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="SortStub" type="Button" parent="RootMargin/MainVBox/MainSplit/ExplorerPanel/ExplorerMargin/ExplorerVBox/ExplorerSubToolbar"]
+custom_minimum_size = Vector2(88, 28)
+layout_mode = 2
+text = "Sort"
+
+[node name="FilterStub" type="Button" parent="RootMargin/MainVBox/MainSplit/ExplorerPanel/ExplorerMargin/ExplorerVBox/ExplorerSubToolbar"]
+custom_minimum_size = Vector2(88, 28)
+layout_mode = 2
+text = "Filter"
+
+[node name="ExplorerToolbarSpacer" type="Control" parent="RootMargin/MainVBox/MainSplit/ExplorerPanel/ExplorerMargin/ExplorerVBox/ExplorerSubToolbar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ExplorerStateLabel" type="Label" parent="RootMargin/MainVBox/MainSplit/ExplorerPanel/ExplorerMargin/ExplorerVBox/ExplorerSubToolbar"]
+layout_mode = 2
+text = "Interactive Objects"
+
+[node name="FieldStatusRow" type="HBoxContainer" parent="RootMargin/MainVBox/MainSplit/ExplorerPanel/ExplorerMargin/ExplorerVBox"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="PlayerHeader" type="HBoxContainer" parent="VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/PlayerInfoVBox"]
+[node name="CursorStatusLabel" type="Label" parent="RootMargin/MainVBox/MainSplit/ExplorerPanel/ExplorerMargin/ExplorerVBox/FieldStatusRow"]
 layout_mode = 2
-theme_override_constants/separation = 18
-
-[node name="Label" type="Label" parent="VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/PlayerInfoVBox/PlayerHeader"]
-custom_minimum_size = Vector2(140, 0)
-layout_mode = 2
-text = "Player"
-
-[node name="HPLabel" type="Label" parent="VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/PlayerInfoVBox/PlayerHeader"]
-custom_minimum_size = Vector2(180, 0)
-layout_mode = 2
-text = "HP: 30/30"
-
-[node name="APLabel" type="Label" parent="VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/PlayerInfoVBox/PlayerHeader"]
-custom_minimum_size = Vector2(180, 0)
-layout_mode = 2
-text = "AP: 5/5"
-
-[node name="PlayerBars" type="VBoxContainer" parent="VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/PlayerInfoVBox"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="HpBar" type="ProgressBar" parent="VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/PlayerInfoVBox/PlayerBars"]
-custom_minimum_size = Vector2(0, 18)
-layout_mode = 2
-max_value = 30.0
-value = 30.0
-show_percentage = false
-
-[node name="ApBar" type="ProgressBar" parent="VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/PlayerInfoVBox/PlayerBars"]
-custom_minimum_size = Vector2(0, 18)
-layout_mode = 2
-max_value = 5.0
-value = 5.0
-show_percentage = false
-
-[node name="PlayerStatusLabel" type="Label" parent="VBoxContainer/PlayerInfoPanel/PlayerInfoMargin/PlayerInfoVBox"]
-layout_mode = 2
-text = "Status: None"
+size_flags_horizontal = 3
+text = "Cursor"
 autowrap_mode = 2
 
-[node name="ContentRow" type="HBoxContainer" parent="VBoxContainer"]
+[node name="FieldSecurityLabel" type="Label" parent="RootMargin/MainVBox/MainSplit/ExplorerPanel/ExplorerMargin/ExplorerVBox/FieldStatusRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Security"
+autowrap_mode = 2
+
+[node name="ExplorerFieldList" type="ItemList" parent="RootMargin/MainVBox/MainSplit/ExplorerPanel/ExplorerMargin/ExplorerVBox"]
+custom_minimum_size = Vector2(0, 456)
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 16
+max_text_lines = 2
+same_column_width = true
+icon_mode = 0
+select_mode = 0
+fixed_column_width = 128
 
-[node name="EnemyPanel" type="PanelContainer" parent="VBoxContainer/ContentRow"]
-custom_minimum_size = Vector2(280, 0)
+[node name="FileListTree" type="Tree" parent="RootMargin/MainVBox/MainSplit/ExplorerPanel/ExplorerMargin/ExplorerVBox"]
+visible = false
+custom_minimum_size = Vector2(0, 456)
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="EnemyMargin" type="MarginContainer" parent="VBoxContainer/ContentRow/EnemyPanel"]
+[node name="ExplorerHintLabel" type="Label" parent="RootMargin/MainVBox/MainSplit/ExplorerPanel/ExplorerMargin/ExplorerVBox"]
+layout_mode = 2
+text = "큰 아이콘 보기 기반 전술 공간 프로토타입. 파일, 폴더, 보안 캐릭터가 여기서 함께 보여야 함." 
+autowrap_mode = 2
+
+[node name="InspectorPanel" type="PanelContainer" parent="RootMargin/MainVBox/MainSplit"]
+custom_minimum_size = Vector2(310, 0)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="InspectorMargin" type="MarginContainer" parent="RootMargin/MainVBox/MainSplit/InspectorPanel"]
 layout_mode = 2
 theme_override_constants/margin_left = 12
 theme_override_constants/margin_top = 12
 theme_override_constants/margin_right = 12
 theme_override_constants/margin_bottom = 12
 
-[node name="EnemyVBox" type="VBoxContainer" parent="VBoxContainer/ContentRow/EnemyPanel/EnemyMargin"]
+[node name="InspectorVBox" type="VBoxContainer" parent="RootMargin/MainVBox/MainSplit/InspectorPanel/InspectorMargin"]
 layout_mode = 2
+size_flags_vertical = 3
 theme_override_constants/separation = 8
 
-[node name="EnemyTitleLabel" type="Label" parent="VBoxContainer/ContentRow/EnemyPanel/EnemyMargin/EnemyVBox"]
+[node name="InspectorHeaderRow" type="HBoxContainer" parent="RootMargin/MainVBox/MainSplit/InspectorPanel/InspectorMargin/InspectorVBox"]
 layout_mode = 2
-text = "Enemies"
 
-[node name="EnemyList" type="ItemList" parent="VBoxContainer/ContentRow/EnemyPanel/EnemyMargin/EnemyVBox"]
-custom_minimum_size = Vector2(0, 280)
+[node name="InspectorTitle" type="Label" parent="RootMargin/MainVBox/MainSplit/InspectorPanel/InspectorMargin/InspectorVBox/InspectorHeaderRow"]
 layout_mode = 2
-size_flags_vertical = 3
+size_flags_horizontal = 3
+text = "Details"
 
-[node name="EnemyDetailPanel" type="PanelContainer" parent="VBoxContainer/ContentRow"]
-custom_minimum_size = Vector2(240, 0)
+[node name="InspectorMeta" type="Label" parent="RootMargin/MainVBox/MainSplit/InspectorPanel/InspectorMargin/InspectorVBox/InspectorHeaderRow"]
 layout_mode = 2
-size_flags_vertical = 3
+text = "Inspector"
 
-[node name="EnemyDetailMargin" type="MarginContainer" parent="VBoxContainer/ContentRow/EnemyDetailPanel"]
+[node name="PlayerStatusLabel" type="Label" parent="RootMargin/MainVBox/MainSplit/InspectorPanel/InspectorMargin/InspectorVBox"]
+layout_mode = 2
+text = "Operator"
+autowrap_mode = 2
+
+[node name="PreviewFrame" type="PanelContainer" parent="RootMargin/MainVBox/MainSplit/InspectorPanel/InspectorMargin/InspectorVBox"]
+custom_minimum_size = Vector2(0, 92)
+layout_mode = 2
+
+[node name="PreviewMargin" type="MarginContainer" parent="RootMargin/MainVBox/MainSplit/InspectorPanel/InspectorMargin/InspectorVBox/PreviewFrame"]
 layout_mode = 2
 theme_override_constants/margin_left = 12
 theme_override_constants/margin_top = 12
 theme_override_constants/margin_right = 12
 theme_override_constants/margin_bottom = 12
 
-[node name="EnemyDetailVBox" type="VBoxContainer" parent="VBoxContainer/ContentRow/EnemyDetailPanel/EnemyDetailMargin"]
+[node name="PreviewVBox" type="VBoxContainer" parent="RootMargin/MainVBox/MainSplit/InspectorPanel/InspectorMargin/InspectorVBox/PreviewFrame/PreviewMargin"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 4
 
-[node name="EnemyDetailTitleLabel" type="Label" parent="VBoxContainer/ContentRow/EnemyDetailPanel/EnemyDetailMargin/EnemyDetailVBox"]
-layout_mode = 2
-text = "Selected Target"
-
-[node name="SelectedEnemyNameLabel" type="Label" parent="VBoxContainer/ContentRow/EnemyDetailPanel/EnemyDetailMargin/EnemyDetailVBox"]
+[node name="InspectorNameLabel" type="Label" parent="RootMargin/MainVBox/MainSplit/InspectorPanel/InspectorMargin/InspectorVBox/PreviewFrame/PreviewMargin/PreviewVBox"]
 layout_mode = 2
 text = "No target selected"
+autowrap_mode = 2
 
-[node name="SelectedEnemyTypeLabel" type="Label" parent="VBoxContainer/ContentRow/EnemyDetailPanel/EnemyDetailMargin/EnemyDetailVBox"]
+[node name="InspectorTypeLabel" type="Label" parent="RootMargin/MainVBox/MainSplit/InspectorPanel/InspectorMargin/InspectorVBox/PreviewFrame/PreviewMargin/PreviewVBox"]
 layout_mode = 2
 text = "Type: -"
+autowrap_mode = 2
 
-[node name="SelectedEnemyPathLabel" type="Label" parent="VBoxContainer/ContentRow/EnemyDetailPanel/EnemyDetailMargin/EnemyDetailVBox"]
+[node name="InspectorPathLabel" type="Label" parent="RootMargin/MainVBox/MainSplit/InspectorPanel/InspectorMargin/InspectorVBox/PreviewFrame/PreviewMargin/PreviewVBox"]
 layout_mode = 2
 text = "Path: -"
 autowrap_mode = 2
 
-[node name="SelectedEnemyStatsLabel" type="Label" parent="VBoxContainer/ContentRow/EnemyDetailPanel/EnemyDetailMargin/EnemyDetailVBox"]
+[node name="InspectorStatsLabel" type="Label" parent="RootMargin/MainVBox/MainSplit/InspectorPanel/InspectorMargin/InspectorVBox"]
 layout_mode = 2
-text = "ATK: - · Size: -"
-
+text = "Stats: -"
 autowrap_mode = 2
 
-[node name="SelectedEnemyStatusLabel" type="Label" parent="VBoxContainer/ContentRow/EnemyDetailPanel/EnemyDetailMargin/EnemyDetailVBox"]
+[node name="InspectorStatusLabel" type="Label" parent="RootMargin/MainVBox/MainSplit/InspectorPanel/InspectorMargin/InspectorVBox"]
 layout_mode = 2
-text = "Status: None"
+text = "Threat / Status"
 autowrap_mode = 2
 
-[node name="SelectedEnemyHpBar" type="ProgressBar" parent="VBoxContainer/ContentRow/EnemyDetailPanel/EnemyDetailMargin/EnemyDetailVBox"]
+[node name="TargetHpBar" type="ProgressBar" parent="RootMargin/MainVBox/MainSplit/InspectorPanel/InspectorMargin/InspectorVBox"]
 custom_minimum_size = Vector2(0, 18)
 layout_mode = 2
 show_percentage = false
 
-[node name="SelectedEnemyApBar" type="ProgressBar" parent="VBoxContainer/ContentRow/EnemyDetailPanel/EnemyDetailMargin/EnemyDetailVBox"]
+[node name="TargetApBar" type="ProgressBar" parent="RootMargin/MainVBox/MainSplit/InspectorPanel/InspectorMargin/InspectorVBox"]
 custom_minimum_size = Vector2(0, 18)
 layout_mode = 2
 show_percentage = false
 
-[node name="BattleLogPanel" type="PanelContainer" parent="VBoxContainer/ContentRow"]
+[node name="InspectorHintLabel" type="Label" parent="RootMargin/MainVBox/MainSplit/InspectorPanel/InspectorMargin/InspectorVBox"]
+layout_mode = 2
+text = "Hint"
+autowrap_mode = 2
+
+[node name="SecurityAgentsLabel" type="Label" parent="RootMargin/MainVBox/MainSplit/InspectorPanel/InspectorMargin/InspectorVBox"]
+layout_mode = 2
+text = "Security: none"
+autowrap_mode = 2
+
+[node name="OperationLogTitleRow" type="HBoxContainer" parent="RootMargin/MainVBox/MainSplit/InspectorPanel/InspectorMargin/InspectorVBox"]
+layout_mode = 2
+
+[node name="OperationLogTitle" type="Label" parent="RootMargin/MainVBox/MainSplit/InspectorPanel/InspectorMargin/InspectorVBox/OperationLogTitleRow"]
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_vertical = 3
+text = "Recent Activity"
 
-[node name="BattleLogMargin" type="MarginContainer" parent="VBoxContainer/ContentRow/BattleLogPanel"]
+[node name="OperationLogMeta" type="Label" parent="RootMargin/MainVBox/MainSplit/InspectorPanel/InspectorMargin/InspectorVBox/OperationLogTitleRow"]
 layout_mode = 2
-theme_override_constants/margin_left = 12
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_right = 12
-theme_override_constants/margin_bottom = 12
+text = "Log"
 
-[node name="BattleLogVBox" type="VBoxContainer" parent="VBoxContainer/ContentRow/BattleLogPanel/BattleLogMargin"]
+[node name="OperationLogLabel" type="RichTextLabel" parent="RootMargin/MainVBox/MainSplit/InspectorPanel/InspectorMargin/InspectorVBox"]
+custom_minimum_size = Vector2(0, 208)
 layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="BattleLogTitleLabel" type="Label" parent="VBoxContainer/ContentRow/BattleLogPanel/BattleLogMargin/BattleLogVBox"]
-layout_mode = 2
-text = "Battle Log"
-
-[node name="BattleLog" type="RichTextLabel" parent="VBoxContainer/ContentRow/BattleLogPanel/BattleLogMargin/BattleLogVBox"]
-custom_minimum_size = Vector2(0, 280)
-layout_mode = 2
-size_flags_horizontal = 3
 size_flags_vertical = 3
 bbcode_enabled = true
 scroll_following = true
 
-[node name="ActionsPanel" type="PanelContainer" parent="VBoxContainer"]
-custom_minimum_size = Vector2(0, 180)
+[node name="ActionPanel" type="PanelContainer" parent="RootMargin/MainVBox"]
+custom_minimum_size = Vector2(0, 212)
 layout_mode = 2
 
-[node name="ActionsMargin" type="MarginContainer" parent="VBoxContainer/ActionsPanel"]
+[node name="ActionMargin" type="MarginContainer" parent="RootMargin/MainVBox/ActionPanel"]
 layout_mode = 2
 theme_override_constants/margin_left = 12
 theme_override_constants/margin_top = 12
 theme_override_constants/margin_right = 12
 theme_override_constants/margin_bottom = 12
 
-[node name="ActionsVBox" type="VBoxContainer" parent="VBoxContainer/ActionsPanel/ActionsMargin"]
+[node name="ActionVBox" type="VBoxContainer" parent="RootMargin/MainVBox/ActionPanel/ActionMargin"]
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 8
 
-[node name="ActionsTitleLabel" type="Label" parent="VBoxContainer/ActionsPanel/ActionsMargin/ActionsVBox"]
+[node name="CommandHeaderRow" type="HBoxContainer" parent="RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox"]
 layout_mode = 2
-text = "Actions"
 
-[node name="GridContainer" type="GridContainer" parent="VBoxContainer/ActionsPanel/ActionsMargin/ActionsVBox"]
+[node name="CommandDeckTitle" type="Label" parent="RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox/CommandHeaderRow"]
 layout_mode = 2
 size_flags_horizontal = 3
-columns = 3
+text = "Action Bar"
 
-[node name="HintPanel" type="PanelContainer" parent="VBoxContainer"]
-custom_minimum_size = Vector2(0, 48)
+[node name="CommandDeckMeta" type="Label" parent="RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox/CommandHeaderRow"]
+layout_mode = 2
+text = "Mouse Only"
+
+[node name="CommandDeckGrid" type="GridContainer" parent="RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox"]
+layout_mode = 2
+columns = 5
+
+[node name="CommandQueuePanel" type="PanelContainer" parent="RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox"]
 layout_mode = 2
 
-[node name="HintMargin" type="MarginContainer" parent="VBoxContainer/HintPanel"]
+[node name="CommandQueueMargin" type="MarginContainer" parent="RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox/CommandQueuePanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 12
+theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 12
+theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 10
 
-[node name="HintLabel" type="Label" parent="VBoxContainer/HintPanel/HintMargin"]
+[node name="CommandQueueVBox" type="VBoxContainer" parent="RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox/CommandQueuePanel/CommandQueueMargin"]
 layout_mode = 2
-text = "심플 더미 UI · 적 선택 후 액션 실행 · 자동 스모크 테스트 지원"
+theme_override_constants/separation = 8
+
+[node name="CommandQueueHeaderRow" type="HBoxContainer" parent="RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox/CommandQueuePanel/CommandQueueMargin/CommandQueueVBox"]
+layout_mode = 2
+
+[node name="CommandQueueTitle" type="Label" parent="RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox/CommandQueuePanel/CommandQueueMargin/CommandQueueVBox/CommandQueueHeaderRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Command Queue"
+
+[node name="CommandQueueMeta" type="Label" parent="RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox/CommandQueuePanel/CommandQueueMargin/CommandQueueVBox/CommandQueueHeaderRow"]
+layout_mode = 2
+text = "Plan then run"
+
+[node name="CommandQueueLabel" type="RichTextLabel" parent="RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox/CommandQueuePanel/CommandQueueMargin/CommandQueueVBox"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+bbcode_enabled = true
+scroll_following = true
+
+[node name="CommandQueueButtonRow" type="HBoxContainer" parent="RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox/CommandQueuePanel/CommandQueueMargin/CommandQueueVBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ClipboardWindowButton" type="Button" parent="RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox/CommandQueuePanel/CommandQueueMargin/CommandQueueVBox/CommandQueueButtonRow"]
+custom_minimum_size = Vector2(120, 34)
+layout_mode = 2
+text = "Clipboard"
+
+[node name="MoveCursorButton" type="Button" parent="RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox/CommandQueuePanel/CommandQueueMargin/CommandQueueVBox/CommandQueueButtonRow"]
+custom_minimum_size = Vector2(120, 34)
+layout_mode = 2
+text = "Move Cursor"
+
+[node name="ExecuteQueueButton" type="Button" parent="RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox/CommandQueuePanel/CommandQueueMargin/CommandQueueVBox/CommandQueueButtonRow"]
+custom_minimum_size = Vector2(140, 34)
+layout_mode = 2
+text = "Execute Queue"
+
+[node name="ExtractButton" type="Button" parent="RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox/CommandQueuePanel/CommandQueueMargin/CommandQueueVBox/CommandQueueButtonRow"]
+custom_minimum_size = Vector2(120, 34)
+layout_mode = 2
+text = "Extract"
+
+[node name="ClearQueueButton" type="Button" parent="RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox/CommandQueuePanel/CommandQueueMargin/CommandQueueVBox/CommandQueueButtonRow"]
+custom_minimum_size = Vector2(120, 34)
+layout_mode = 2
+text = "Clear Queue"
+
+[node name="ConsoleHintLabel" type="Label" parent="RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox"]
+layout_mode = 2
+text = "파일을 고르고 액션을 클릭해." 
+autowrap_mode = 2
+
+[node name="ConsolePanel" type="PanelContainer" parent="RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox"]
+custom_minimum_size = Vector2(0, 84)
+layout_mode = 2
+
+[node name="ConsoleMargin" type="MarginContainer" parent="RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox/ConsolePanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="ConsoleVBox" type="VBoxContainer" parent="RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox/ConsolePanel/ConsoleMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ConsoleTopRow" type="HBoxContainer" parent="RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox/ConsolePanel/ConsoleMargin/ConsoleVBox"]
+layout_mode = 2
+
+[node name="ConsoleTitle" type="Label" parent="RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox/ConsolePanel/ConsoleMargin/ConsoleVBox/ConsoleTopRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Quick Tools"
+
+[node name="UtilityRow" type="HBoxContainer" parent="RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox/ConsolePanel/ConsoleMargin/ConsoleVBox/ConsoleTopRow"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="HelpButton" type="Button" parent="RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox/ConsolePanel/ConsoleMargin/ConsoleVBox/ConsoleTopRow/UtilityRow"]
+custom_minimum_size = Vector2(84, 32)
+layout_mode = 2
+text = "Help"
+
+[node name="ScanButton" type="Button" parent="RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox/ConsolePanel/ConsoleMargin/ConsoleVBox/ConsoleTopRow/UtilityRow"]
+custom_minimum_size = Vector2(84, 32)
+layout_mode = 2
+text = "Scan"
+
+[node name="StatusButton" type="Button" parent="RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox/ConsolePanel/ConsoleMargin/ConsoleVBox/ConsoleTopRow/UtilityRow"]
+custom_minimum_size = Vector2(84, 32)
+layout_mode = 2
+text = "Status"
+
+[node name="UpButton" type="Button" parent="RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox/ConsolePanel/ConsoleMargin/ConsoleVBox/ConsoleTopRow/UtilityRow"]
+custom_minimum_size = Vector2(84, 32)
+layout_mode = 2
+text = "Up"
+
+[node name="ClearButton" type="Button" parent="RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox/ConsolePanel/ConsoleMargin/ConsoleVBox/ConsoleTopRow/UtilityRow"]
+custom_minimum_size = Vector2(84, 32)
+layout_mode = 2
+text = "Clear"
+
+[node name="ConsoleFeedLabel" type="RichTextLabel" parent="RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox/ConsolePanel/ConsoleMargin/ConsoleVBox"]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+bbcode_enabled = true
+scroll_following = true
+
+[node name="ClipboardWindow" type="PanelContainer" parent="."]
+visible = false
+custom_minimum_size = Vector2(320, 220)
+layout_mode = 1
+offset_left = 900.0
+offset_top = 170.0
+offset_right = 1220.0
+offset_bottom = 390.0
+
+[node name="ClipboardWindowMargin" type="MarginContainer" parent="ClipboardWindow"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="ClipboardWindowVBox" type="VBoxContainer" parent="ClipboardWindow/ClipboardWindowMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ClipboardWindowHeaderRow" type="HBoxContainer" parent="ClipboardWindow/ClipboardWindowMargin/ClipboardWindowVBox"]
+layout_mode = 2
+
+[node name="ClipboardWindowTitle" type="Label" parent="ClipboardWindow/ClipboardWindowMargin/ClipboardWindowVBox/ClipboardWindowHeaderRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Clipboard Window"
+
+[node name="ClipboardWindowMeta" type="Label" parent="ClipboardWindow/ClipboardWindowMargin/ClipboardWindowVBox/ClipboardWindowHeaderRow"]
+layout_mode = 2
+text = "Aux"
+
+[node name="ClipboardWindowCloseButton" type="Button" parent="ClipboardWindow/ClipboardWindowMargin/ClipboardWindowVBox/ClipboardWindowHeaderRow"]
+custom_minimum_size = Vector2(56, 28)
+layout_mode = 2
+text = "Close"
+
+[node name="ClipboardWindowStatusLabel" type="Label" parent="ClipboardWindow/ClipboardWindowMargin/ClipboardWindowVBox"]
+layout_mode = 2
+text = "Clipboard status"
+autowrap_mode = 2
+
+[node name="ClipboardWindowItemsLabel" type="RichTextLabel" parent="ClipboardWindow/ClipboardWindowMargin/ClipboardWindowVBox"]
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+scroll_following = true
+
+[node name="ExplorerContextMenu" type="PopupMenu" parent="."]
 
 [node name="BattleEndOverlay" type="Control" parent="."]
 visible = false
@@ -292,7 +613,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.0392157, 0.0470588, 0.0627451, 0.76)
+color = Color(0.0588235, 0.0666667, 0.0823529, 0.72)
 
 [node name="OverlayCenter" type="CenterContainer" parent="BattleEndOverlay"]
 layout_mode = 1
@@ -303,15 +624,15 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="BattleEndPanel" type="PanelContainer" parent="BattleEndOverlay/OverlayCenter"]
-custom_minimum_size = Vector2(360, 0)
+custom_minimum_size = Vector2(400, 0)
 layout_mode = 2
 
 [node name="BattleEndMargin" type="MarginContainer" parent="BattleEndOverlay/OverlayCenter/BattleEndPanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 20
-theme_override_constants/margin_top = 20
-theme_override_constants/margin_right = 20
-theme_override_constants/margin_bottom = 20
+theme_override_constants/margin_left = 22
+theme_override_constants/margin_top = 22
+theme_override_constants/margin_right = 22
+theme_override_constants/margin_bottom = 22
 
 [node name="BattleEndVBox" type="VBoxContainer" parent="BattleEndOverlay/OverlayCenter/BattleEndPanel/BattleEndMargin"]
 layout_mode = 2
@@ -319,18 +640,18 @@ theme_override_constants/separation = 12
 
 [node name="BattleEndTitleLabel" type="Label" parent="BattleEndOverlay/OverlayCenter/BattleEndPanel/BattleEndMargin/BattleEndVBox"]
 layout_mode = 2
-text = "Battle Finished"
+text = "Mission Finished"
 horizontal_alignment = 1
 
 [node name="BattleEndSummaryLabel" type="Label" parent="BattleEndOverlay/OverlayCenter/BattleEndPanel/BattleEndMargin/BattleEndVBox"]
 layout_mode = 2
-text = "Victory"
+text = "Summary"
 horizontal_alignment = 1
 autowrap_mode = 2
 
 [node name="BattleEndStatsLabel" type="Label" parent="BattleEndOverlay/OverlayCenter/BattleEndPanel/BattleEndMargin/BattleEndVBox"]
 layout_mode = 2
-text = "사용 액션 0회 · 액션 종류 0개 · 정리한 적 0체"
+text = "Stats"
 horizontal_alignment = 1
 autowrap_mode = 2
 
@@ -340,11 +661,11 @@ alignment = 1
 theme_override_constants/separation = 12
 
 [node name="RestartBattleButton" type="Button" parent="BattleEndOverlay/OverlayCenter/BattleEndPanel/BattleEndMargin/BattleEndVBox/BattleEndButtonRow"]
-custom_minimum_size = Vector2(140, 44)
+custom_minimum_size = Vector2(148, 42)
 layout_mode = 2
-text = "Restart Battle"
+text = "Restart Mission"
 
-[node name="BackToMenuButton" type="Button" parent="BattleEndOverlay/OverlayCenter/BattleEndPanel/BattleEndMargin/BattleEndVBox/BattleEndButtonRow"]
-custom_minimum_size = Vector2(140, 44)
+[node name="BackToLobbyButton" type="Button" parent="BattleEndOverlay/OverlayCenter/BattleEndPanel/BattleEndMargin/BattleEndVBox/BattleEndButtonRow"]
+custom_minimum_size = Vector2(148, 42)
 layout_mode = 2
-text = "Back to Menu"
+text = "Back to Lobby"

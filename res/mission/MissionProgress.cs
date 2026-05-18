@@ -37,12 +37,12 @@ public class MissionProgress
         return turnCount > turnLimit;
     }
 
-    public MissionResult Resolve(bool playerSurvived, bool dungeonCleared, int turnsUsed, int turnLimit)
+    public MissionResult Resolve(bool playerSurvived, bool extracted, int turnsUsed, int turnLimit)
     {
-        bool success = playerSurvived && dungeonCleared && _objectiveCompleted && !HasExceededTurnLimit(turnsUsed, turnLimit);
+        bool success = playerSurvived && extracted && _objectiveCompleted && !HasExceededTurnLimit(turnsUsed, turnLimit);
         string summary = success
             ? $"{Mission.Title} complete. Client package delivered cleanly."
-            : BuildFailureSummary(playerSurvived, dungeonCleared, turnsUsed, turnLimit);
+            : BuildFailureSummary(playerSurvived, extracted, turnsUsed, turnLimit);
 
         return new MissionResult(
             mission: Mission,
@@ -53,12 +53,12 @@ public class MissionProgress
             heatDelta: success ? 0 : Mission.FailureHeat,
             objectiveCompleted: _objectiveCompleted,
             playerSurvived: playerSurvived,
-            dungeonCleared: dungeonCleared,
+            dungeonCleared: extracted,
             turnsUsed: turnsUsed
         );
     }
 
-    private string BuildFailureSummary(bool playerSurvived, bool dungeonCleared, int turnsUsed, int turnLimit)
+    private string BuildFailureSummary(bool playerSurvived, bool extracted, int turnsUsed, int turnLimit)
     {
         if (!playerSurvived)
             return $"{Mission.Title} failed. Operator trace collapsed before extraction.";
@@ -69,8 +69,8 @@ public class MissionProgress
         if (!_objectiveCompleted)
             return $"{Mission.Title} failed. Objective at {Mission.TargetPath} was not secured.";
 
-        if (!dungeonCleared)
-            return $"{Mission.Title} failed. Exit route stayed hot and the package could not be delivered.";
+        if (!extracted)
+            return $"{Mission.Title} failed. Objective was secured, but extraction never completed.";
 
         return $"{Mission.Title} failed.";
     }

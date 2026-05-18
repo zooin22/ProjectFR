@@ -16,6 +16,8 @@ public static class ActionMetadata
         "clean" => "AoE damage + clear own status effects",
         "quarantine" => $"Prevent enemy action for {ActionConstants.QuarantineEffectDuration} turns",
         "compress" => $"Reduce enemy attack by {Math.Abs(ActionConstants.CompressAttackModifier)} for {ActionConstants.CompressEffectDuration} turns",
+        "logforge" => "Rewrite records to reduce trace after a delay",
+        "search" => "Scan for signatures and reveal clues, but raises trace",
         _ => string.Empty
     };
 
@@ -30,6 +32,8 @@ public static class ActionMetadata
         "clean" => new Color(0.42f, 0.86f, 0.86f),
         "quarantine" => new Color(0.83f, 0.59f, 1.0f),
         "compress" => new Color(0.59f, 0.92f, 0.6f),
+        "logforge" => new Color(0.86f, 0.82f, 1.0f),
+        "search" => new Color(0.98f, 0.88f, 0.49f),
         _ => Colors.White
     };
 }

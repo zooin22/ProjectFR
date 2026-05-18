@@ -4,96 +4,190 @@ namespace ProjectFR.Battle;
 
 public class BattleDungeon
 {
-    private readonly List<FolderNode> _folderOrder;
     private readonly Dictionary<string, DungeonFolderMetadata> _folderMetadata;
-    private int _currentFolderIndex;
+    private readonly Dictionary<string, NodeData> _nodeIndex = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, ContainerNode?> _parentIndex = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _clearedPaths = new(StringComparer.OrdinalIgnoreCase);
 
     public FolderNode Root { get; }
-    public FolderNode CurrentFolder => _folderOrder[_currentFolderIndex];
+    public ContainerNode CurrentContainer { get; private set; }
     public int TotalNodeCount { get; }
-    public int ClearedNodeCount { get; private set; }
-    public int EncounterIndex => _currentFolderIndex + 1;
-    public int EncounterCount => _folderOrder.Count;
+    public int ClearedNodeCount => _clearedPaths.Count;
 
     public BattleDungeon(FolderNode root, Dictionary<string, DungeonFolderMetadata> folderMetadata)
     {
         Root = root;
+        CurrentContainer = root;
         _folderMetadata = folderMetadata;
-        _folderOrder = EnumerateFoldersDepthFirst(root)
-            .Where(folder => folder.Children.Count > 0)
-            .ToList();
-        _currentFolderIndex = 0;
+
+        IndexNode(root, null);
         TotalNodeCount = CountNodes(root);
     }
 
     public IReadOnlyList<NodeData> GetCurrentEncounterNodes()
     {
-        return CurrentFolder.Children;
+        return CurrentContainer.Children
+            .Where(child => !_clearedPaths.Contains(child.Path))
+            .ToList();
     }
 
-    public DungeonFolderMetadata GetCurrentMetadata()
+    public IEnumerable<FolderNode> GetAllFolders()
     {
-        return GetMetadata(CurrentFolder);
+        return _nodeIndex.Values.OfType<FolderNode>();
     }
 
-    public FolderNode? PeekNextFolder()
+    public NodeData? GetNode(string path)
     {
-        var nextIndex = _currentFolderIndex + 1;
-        return nextIndex < _folderOrder.Count ? _folderOrder[nextIndex] : null;
+        return _nodeIndex.GetValueOrDefault(path);
     }
 
-    public DungeonFolderMetadata? PeekNextMetadata()
+    public ContainerNode? GetParentContainer(string path)
     {
-        var nextFolder = PeekNextFolder();
-        return nextFolder != null ? GetMetadata(nextFolder) : null;
+        return _parentIndex.GetValueOrDefault(path);
     }
 
-    public bool AdvanceAfterCurrentEncounter()
+    public bool EnterContainer(string path)
     {
-        ClearedNodeCount = Math.Min(TotalNodeCount, ClearedNodeCount + CurrentFolder.Children.Count);
-
-        if (_currentFolderIndex + 1 >= _folderOrder.Count)
+        if (_nodeIndex.GetValueOrDefault(path) is not ContainerNode container)
             return false;
 
-        _currentFolderIndex++;
+        CurrentContainer = container;
         return true;
+    }
+
+    public bool EnterParentOfCurrent()
+    {
+        if (!_parentIndex.TryGetValue(CurrentContainer.Path, out var parent) || parent == null)
+            return false;
+
+        CurrentContainer = parent;
+        return true;
+    }
+
+    public bool IsCleared(string path)
+    {
+        return _clearedPaths.Contains(path);
+    }
+
+    public void MarkCleared(NodeData node)
+    {
+        MarkClearedRecursive(node);
+
+        var parent = GetParentContainer(node.Path);
+        parent?.RemoveChild(node);
+
+        if (ReferenceEquals(CurrentContainer, node) && parent != null)
+        {
+            CurrentContainer = parent;
+        }
+    }
+
+    public bool MoveNode(string nodePath, string targetContainerPath)
+    {
+        if (_nodeIndex.GetValueOrDefault(nodePath) is not NodeData node)
+            return false;
+
+        if (_nodeIndex.GetValueOrDefault(targetContainerPath) is not ContainerNode targetContainer)
+            return false;
+
+        if (_parentIndex.GetValueOrDefault(nodePath) is not ContainerNode currentParent)
+            return false;
+
+        if (string.Equals(currentParent.Path, targetContainer.Path, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        currentParent.RemoveChild(node);
+        targetContainer.AddChild(node);
+        _parentIndex[node.Path] = targetContainer;
+        return true;
+    }
+
+    public bool HasRemainingNodes()
+    {
+        return EnumerateAllNodes(Root).Any(node => !_clearedPaths.Contains(node.Path));
     }
 
     public string GetProgressLabel()
     {
-        return $"Encounter {EncounterIndex}/{EncounterCount} · Cleared {ClearedNodeCount}/{TotalNodeCount} nodes";
+        return $"Cleared {ClearedNodeCount}/{TotalNodeCount} nodes";
     }
 
-    private DungeonFolderMetadata GetMetadata(FolderNode folder)
+    public DungeonFolderMetadata GetCurrentMetadata()
     {
-        return _folderMetadata.GetValueOrDefault(folder.Path)
-            ?? new DungeonFolderMetadata("Unclassified", "No event data", "No reward data", 0);
+        return GetMetadataForPath(CurrentContainer.Path);
     }
 
-    private static int CountNodes(FolderNode folder)
+    public DungeonFolderMetadata GetMetadataForPath(string path)
+    {
+        var cursor = path;
+        while (true)
+        {
+            if (_folderMetadata.TryGetValue(cursor, out var metadata))
+                return metadata;
+
+            var parent = GetParentContainer(cursor);
+            if (parent == null)
+                break;
+
+            cursor = parent.Path;
+        }
+
+        return new DungeonFolderMetadata("Unclassified", "No event data", "No reward data", 0);
+    }
+
+    private void IndexNode(NodeData node, ContainerNode? parent)
+    {
+        _nodeIndex[node.Path] = node;
+        _parentIndex[node.Path] = parent;
+
+        if (node is not ContainerNode container)
+            return;
+
+        foreach (var child in container.Children)
+        {
+            IndexNode(child, container);
+        }
+    }
+
+    private void MarkClearedRecursive(NodeData node)
+    {
+        _clearedPaths.Add(node.Path);
+
+        if (node is not ContainerNode container)
+            return;
+
+        foreach (var child in container.Children.ToList())
+        {
+            MarkClearedRecursive(child);
+        }
+    }
+
+    private static int CountNodes(ContainerNode container)
     {
         int total = 0;
-        foreach (var child in folder.Children)
+        foreach (var child in container.Children)
         {
             total++;
-            if (child is FolderNode childFolder)
+            if (child is ContainerNode nested)
             {
-                total += CountNodes(childFolder);
+                total += CountNodes(nested);
             }
         }
 
         return total;
     }
 
-    private static IEnumerable<FolderNode> EnumerateFoldersDepthFirst(FolderNode folder)
+    private static IEnumerable<NodeData> EnumerateAllNodes(ContainerNode container)
     {
-        yield return folder;
-
-        foreach (var childFolder in folder.Children.OfType<FolderNode>())
+        foreach (var child in container.Children)
         {
-            foreach (var nestedFolder in EnumerateFoldersDepthFirst(childFolder))
+            yield return child;
+            if (child is ContainerNode nested)
             {
-                yield return nestedFolder;
+                foreach (var nestedChild in EnumerateAllNodes(nested))
+                {
+                    yield return nestedChild;
+                }
             }
         }
     }

@@ -116,20 +116,3 @@ public class PasteAction : IAction
         return new ActionResult(true, $"Pasted Folder and applied Quarantine ({ActionConstants.QuarantineEffectDuration} turns)");
     }
 }
-
-/// <summary>
-/// Represents a special file node - a more dangerous file type
-/// </summary>
-public class SpecialFileNode : FileNode
-{
-    /// <summary>
-    /// Initializes a new instance of the SpecialFileNode class
-    /// </summary>
-    /// <param name="name">The name of the file</param>
-    /// <param name="path">The path to the file</param>
-    /// <param name="size">The size of the file in bytes</param>
-    public SpecialFileNode(string name, string path, long size = 0)
-        : base(name, path, size)
-    {
-    }
-}

@@ -58,12 +58,12 @@ text = "ProjectFR"
 
 [node name="SubtitleLabel" type="Label" parent="RootMargin/MainVBox/HeroPanel/HeroMargin/HeroVBox"]
 layout_mode = 2
-text = "의뢰를 받아 시스템에 침투하는 해커 미션 프로토타입"
+text = "작전 로비 · 의뢰를 고르고 침투 준비를 하는 허브 씬"
 autowrap_mode = 2
 
 [node name="DescriptionLabel" type="Label" parent="RootMargin/MainVBox/HeroPanel/HeroMargin/HeroVBox"]
 layout_mode = 2
-text = "의뢰 요약"
+text = "로비에서 의뢰를 검토하고 바로 침투를 시작할 수 있다."
 autowrap_mode = 2
 
 [node name="PrimaryButtonRow" type="HBoxContainer" parent="RootMargin/MainVBox/HeroPanel/HeroMargin/HeroVBox"]
@@ -73,24 +73,23 @@ theme_override_constants/separation = 12
 [node name="PreviousMissionButton" type="Button" parent="RootMargin/MainVBox/HeroPanel/HeroMargin/HeroVBox/PrimaryButtonRow"]
 custom_minimum_size = Vector2(120, 48)
 layout_mode = 2
-text = "Prev Mission"
+text = "이전 의뢰"
 
 [node name="StartBattleButton" type="Button" parent="RootMargin/MainVBox/HeroPanel/HeroMargin/HeroVBox/PrimaryButtonRow"]
 custom_minimum_size = Vector2(180, 48)
 layout_mode = 2
-text = "Start Mission"
+text = "침투 시작"
 
 [node name="NextMissionButton" type="Button" parent="RootMargin/MainVBox/HeroPanel/HeroMargin/HeroVBox/PrimaryButtonRow"]
 custom_minimum_size = Vector2(120, 48)
 layout_mode = 2
-text = "Next Mission"
+text = "다음 의뢰"
 
 [node name="SmokeTestLabel" type="Label" parent="RootMargin/MainVBox/HeroPanel/HeroMargin/HeroVBox/PrimaryButtonRow"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "자동 스모크 테스트/콘솔 실행 지원"
+text = "로비 씬"
 vertical_alignment = 1
-
 autowrap_mode = 2
 
 [node name="InfoRow" type="HBoxContainer" parent="RootMargin/MainVBox"]
@@ -116,7 +115,7 @@ theme_override_constants/separation = 10
 
 [node name="MissionTitleLabel" type="Label" parent="RootMargin/MainVBox/InfoRow/MissionPanel/MissionMargin/MissionVBox"]
 layout_mode = 2
-text = "Selected Contract"
+text = "선택된 의뢰"
 
 [node name="MissionTitleValueLabel" type="Label" parent="RootMargin/MainVBox/InfoRow/MissionPanel/MissionMargin/MissionVBox"]
 layout_mode = 2
@@ -151,7 +150,7 @@ theme_override_constants/separation = 10
 
 [node name="OperatorTitleLabel" type="Label" parent="RootMargin/MainVBox/InfoRow/OperatorPanel/OperatorMargin/OperatorVBox"]
 layout_mode = 2
-text = "Operator Status"
+text = "오퍼레이터 상태"
 
 [node name="OperatorStatusLabel" type="Label" parent="RootMargin/MainVBox/InfoRow/OperatorPanel/OperatorMargin/OperatorVBox"]
 layout_mode = 2
@@ -176,5 +175,5 @@ theme_override_constants/margin_bottom = 14
 
 [node name="HintLabel" type="Label" parent="RootMargin/MainVBox/HintPanel/HintMargin"]
 layout_mode = 2
-text = "의뢰를 고른 뒤 Start Mission으로 침투를 시작해. 성공하면 크레딧과 평판을 얻고, 실패하면 자금과 추적도에 타격이 온다."
+text = "여기는 로비다. 의뢰를 고른 뒤 침투를 시작하고, 작전 종료 후 다시 여기로 돌아온다. 성공하면 크레딧과 평판을 얻고 실패하면 추적도가 오른다."
 autowrap_mode = 2

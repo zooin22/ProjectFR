@@ -22,6 +22,8 @@ public class ActionRegistry
         Register(new CleanAction());
         Register(new QuarantineAction());
         Register(new CompressAction());
+        Register(new LogForgeAction());
+        Register(new SearchAction());
     }
 
     public void Register(IAction action)
