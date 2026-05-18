@@ -1,0 +1,196 @@
+@startuml
+title ProjectFR Class Diagram
+skinparam classAttributeIconSize 0
+
+' Core
+class GameManager {
+  - Instance: GameManager
+  - CurrentBattle: BattleManager?
+  - Clipboard: ClipboardSystem
+  - StatusEffects: StatusEffectSystem
+  + StartNewBattle()
+  + EndCurrentBattle()
+}
+
+' Battle
+class BattleManager {
+  - Player: ActorState
+  - Enemies: List<ActorState>
+  - ActionRegistry: ActionRegistry
+  - BattleLog: List<String>
+  - CurrentState: BattleState
+  - TurnCount: int
+  + StartBattle()
+  + PlayerAction(IAction, ActionContext)
+  + ProcessEnemyTurns()
+  + EndRound()
+  + AddLog(String)
+}
+
+class ActorState {
+  - Id: string
+  - DisplayName: string
+  - MaxHp: int
+  - CurrentHp: int
+  - MaxAp: int
+  - CurrentAp: int
+  - AttackPower: int
+  + TakeDamage(int)
+  + ConsumeAp(int)
+  + RestoreAp(int)
+}
+
+GameManager "1" o-- "1" BattleManager : manages
+BattleManager "1" *-- "*" ActorState : player/enemies
+
+' Action system
+interface IAction {
+  + ActionId: string
+  + DisplayName: string
+  + ApCost: int
+  + Scope: TargetType
+  + Conditions: List<IActionCondition>
+  + CanExecute(ActionContext): bool
+  + Execute(ActionContext): ActionResult
+}
+
+class ActionRegistry {
+  - _actions: Dictionary<string,IAction>
+  + Register(IAction)
+  + GetAction(string): IAction?
+  + GetAllActions(): List<IAction>
+  + GetExecutableActions(ActionContext): List<IAction>
+}
+
+IAction <|.. OpenAction
+IAction <|.. DeleteAction
+IAction <|.. PasteAction
+OpenAction : + ActionId
+DeleteAction : + ActionId
+PasteAction : + ActionId
+ActionRegistry "1" o-- "*" IAction : stores
+
+interface IActionCondition {
+  + ConditionId: string
+  + Check(ActionContext): bool
+}
+
+IActionCondition <|.. MinApCondition
+IActionCondition <|.. TargetAliveCondition
+IActionCondition <|.. ClipboardNotEmptyCondition
+
+class ActionContext {
+  - Actor: ActorState
+  - Target: ActorState?
+  - TargetNode: NodeData?
+  - AllActors: IEnumerable<ActorState>
+  - Clipboard: ClipboardSystem?
+  - StatusEffects: StatusEffectSystem?
+}
+
+class ActionResult {
+  - Success: bool
+  - Message: string
+  - DamageDealt: int
+  - Data: Map
+}
+
+ActionContext "uses" --> IAction
+ActionResult <-- IAction : returns
+
+' Data / Nodes
+abstract class NodeData {
+  - Name: string
+  - Path: string
+  - IsFolder: bool
+  - Size: long
+  + ToString()
+}
+class FileNode
+class FolderNode {
+  - Children: List<NodeData>
+  + AddChild(NodeData)
+  + RemoveChild(NodeData)
+}
+class SpecialFileNode
+
+NodeData <|-- FileNode
+NodeData <|-- FolderNode
+FileNode <|-- SpecialFileNode
+
+' Systems
+class ClipboardSystem {
+  - Mode: string
+  + Copy(NodeData)
+  + Cut(NodeData)
+  + Paste(): NodeData?
+}
+
+class StatusEffectSystem {
+  + AddEffect(actorId, StatusEffect, duration)
+  + UpdateDurations()
+  + HasEffect(actorId, StatusEffect): bool
+}
+
+' UI / Scene
+class BattleScene {
+  - _battleManager: BattleManager
+  - _actionRegistry: ActionRegistry
+  - _enemyNodes: Dictionary<string,NodeData>
+  - UI elements...
+  + _Ready()
+  + UpdateUI()
+  + OnActionButtonPressed(string)
+}
+
+BattleScene --> BattleManager : uses
+BattleScene --> ActionRegistry : uses
+BattleScene --> NodeData : references
+
+' Constants / Resources
+class ActionConstants {
+  + PasteActionApCost: int
+  + PasteFileDamage: int
+  + PasteSpecialFileBaseDamage: int
+  + PasteSpecialFileMultiplier: double
+  + QuarantineEffectDuration: int
+}
+
+class BattleConstants {
+  + MaxBattleLogEntries: int
+  + UIBattleLogDisplayLines: int
+  + DefaultPlayerMaxHp: int
+  + DefaultPlayerMaxAp: int
+}
+
+' ContextActionData (Godot Resource)
+class ContextActionData {
+  + ActionId: string
+  + DisplayName: string
+  + ApCost: int
+  + Scope: TargetType
+  + Conditions: Array<Resource>
+}
+
+' Notes
+note left of PasteAction
+  PasteAction currently contains
+  a SpecialFileNode definition in
+  some commits. Recommended: move
+  SpecialFileNode to ProjectFR.Data.Nodes
+end note
+
+note right of BattleManager
+  BattleManager coordinates turns,
+  applies status effects and manages
+  battle log and state transitions.
+end note
+
+' Associations overview
+BattleManager ..> ActionRegistry : uses
+BattleManager ..> ClipboardSystem : uses
+BattleManager ..> StatusEffectSystem : uses
+IAction ..> ActionContext : inputs
+IAction ..> ActionResult : outputs
+
+@enduml
