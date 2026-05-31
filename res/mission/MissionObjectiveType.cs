@@ -4,5 +4,7 @@ public enum MissionObjectiveType
 {
     Extract,
     Delete,
-    Scan
+    Scan,
+    Modify,
+    Escape,
 }

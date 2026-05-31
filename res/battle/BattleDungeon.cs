@@ -18,7 +18,7 @@ public class BattleDungeon
     {
         Root = root;
         CurrentContainer = root;
-        _folderMetadata = folderMetadata;
+        _folderMetadata = new Dictionary<string, DungeonFolderMetadata>(folderMetadata, StringComparer.OrdinalIgnoreCase);
 
         IndexNode(root, null);
         TotalNodeCount = CountNodes(root);

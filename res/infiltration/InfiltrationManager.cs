@@ -13,6 +13,7 @@ public sealed class InfiltrationManager
     public InfiltrationState State { get; } = new();
     public List<SecurityAgent> SecurityAgents { get; } = new();
     public MissionData Mission { get; }
+    private readonly SecurityBehaviorExecutor _securityBehaviorExecutor = new();
 
     public InfiltrationManager(MissionData mission)
     {
@@ -26,6 +27,12 @@ public sealed class InfiltrationManager
         State.KnownNodePaths.Clear();
         State.Windows.Clear();
         State.Clipboard.Clear();
+        State.PouchCache.Clear();
+        State.ExposedPouchPaths.Clear();
+        State.PermissionOverrideTurns.Clear();
+        State.TrackedPathTurns.Clear();
+        State.ForcedLockTurns.Clear();
+        State.ScanPressureTurns.Clear();
         State.ActiveOperations.Clear();
         State.CommandQueue.Clear();
         State.RunStatus = RunStatus.Active;
@@ -116,12 +123,22 @@ public sealed class InfiltrationManager
         State.TurnCount++;
         State.CursorAgent.RestoreActionPoints();
         TickOperations();
+        TickPermissionOverrides();
+        TickTurnDictionary(State.TrackedPathTurns, "Tracked path expired");
+        TickTurnDictionary(State.ForcedLockTurns, "Forced lock expired");
+        TickTurnDictionary(State.ScanPressureTurns, "Scan pressure expired");
         AdvanceSecurityAgents();
         State.AddLog($"Turn advanced to {State.TurnCount}");
     }
 
     public void QueueCommand(CommandQueueEntry entry)
     {
+        if (!TryValidateQueueEntry(entry, out var validationError))
+        {
+            State.AddLog($"Queue rejected: {validationError}");
+            return;
+        }
+
         entry.Order = State.CommandQueue.Count + 1;
         State.CommandQueue.Add(entry);
         State.AddLog($"Queued: {entry.Summary}");
@@ -135,14 +152,25 @@ public sealed class InfiltrationManager
 
     public void ExecuteQueuedCommands()
     {
+        var startedCount = 0;
+        var skippedCount = 0;
+
         foreach (var entry in State.CommandQueue.OrderBy(x => x.Order).ToList())
         {
+            if (!TryValidateQueueEntry(entry, out var validationError))
+            {
+                skippedCount++;
+                State.AddLog($"Queue skipped: {validationError}");
+                continue;
+            }
+
             var operation = CreateOperationFromQueueEntry(entry);
             StartOperation(operation);
+            startedCount++;
         }
 
         State.CommandQueue.Clear();
-        State.AddLog("Command queue executed");
+        State.AddLog($"Command queue executed ({startedCount} started, {skippedCount} skipped)");
     }
 
     public void StartOperation(FileOperation operation)
@@ -151,9 +179,11 @@ public sealed class InfiltrationManager
         State.ActiveOperations.Add(operation);
         State.AddLog($"Operation started: {operation.Type} @ {operation.TargetNodePath}");
 
+        ApplyTrackedPathActionTrace(operation.TargetNodePath, operation.Type);
+
         if (GetMonitoringAgents(operation.TargetNodePath).Count > 0)
         {
-            AddTrace(4, $"Monitored operation: {operation.Type} @ {operation.TargetNodePath}");
+            AddTrace(InfiltrationTuning.MonitoredOperationTraceIncrease, $"Monitored operation: {operation.Type} @ {operation.TargetNodePath}");
         }
     }
 
@@ -184,7 +214,7 @@ public sealed class InfiltrationManager
         UpdateAlertStage();
     }
 
-    public bool TryCopyToClipboard(string nodePath, ExplorerNodeKind nodeKind)
+    public bool TryCopyToClipboard(string nodePath, ExplorerNodeKind nodeKind, long size = 0)
     {
         if (State.Clipboard.Count >= State.CursorAgent.ClipboardCapacity)
         {
@@ -195,9 +225,64 @@ public sealed class InfiltrationManager
         State.Clipboard.Add(new ClipboardEntry
         {
             NodePath = nodePath,
-            NodeKind = nodeKind
+            NodeKind = nodeKind,
+            Size = size
         });
         State.AddLog($"Clipboard add: {nodePath}");
+        return true;
+    }
+
+    public bool TryMoveClipboardToPouch(string nodePath, long size)
+    {
+        if (State.PouchCache.Count >= State.CursorAgent.PouchCapacity)
+        {
+            State.AddLog("Pouch cache full");
+            return false;
+        }
+
+        if (size > State.CursorAgent.PouchMaxFileSize)
+        {
+            State.AddLog($"Pouch rejected oversized file: {nodePath} ({size})");
+            return false;
+        }
+
+        var clipboardEntry = State.Clipboard.FirstOrDefault(entry => string.Equals(entry.NodePath, nodePath, StringComparison.OrdinalIgnoreCase));
+        if (clipboardEntry == null)
+        {
+            State.AddLog($"Clipboard entry missing: {nodePath}");
+            return false;
+        }
+
+        clipboardEntry.Size = size;
+        clipboardEntry.IsGhosted = true;
+        State.ExposedPouchPaths.Remove(nodePath);
+        State.Clipboard.Remove(clipboardEntry);
+        State.PouchCache.Add(clipboardEntry);
+        ReduceTrace(InfiltrationTuning.PouchHideTraceReduction, $"Cheek pouch hid small file: {nodePath}");
+        State.AddLog($"Pouch cache add: {nodePath}");
+        return true;
+    }
+
+    public bool TryRestoreFromPouch(string nodePath)
+    {
+        if (State.Clipboard.Count >= State.CursorAgent.ClipboardCapacity)
+        {
+            State.AddLog("Clipboard full");
+            return false;
+        }
+
+        var pouchEntry = State.PouchCache.FirstOrDefault(entry => string.Equals(entry.NodePath, nodePath, StringComparison.OrdinalIgnoreCase));
+        if (pouchEntry == null)
+        {
+            State.AddLog($"Pouch cache entry missing: {nodePath}");
+            return false;
+        }
+
+        pouchEntry.IsGhosted = false;
+        State.ExposedPouchPaths.Remove(nodePath);
+        State.PouchCache.Remove(pouchEntry);
+        State.Clipboard.Add(pouchEntry);
+        State.AddLog($"Pouch cache restore: {nodePath}");
         return true;
     }
 
@@ -206,12 +291,13 @@ public sealed class InfiltrationManager
         State.CursorAgent.CurrentNodePath = nodePath;
         State.AddLog($"Cursor moved: {nodePath}");
 
-        foreach (var agent in GetMonitoringAgents(nodePath))
-        {
-            agent.IsAlerted = true;
-            agent.AwarenessStage = SecurityAwarenessStage.Suspicious;
-            AddTrace(6, $"Cursor crossed monitored node: {nodePath}");
-        }
+        ExecuteSecurityBehavior(
+            SecurityBehaviorKeys.CursorCrossedMonitoredNode,
+            nodePath,
+            GetMonitoringAgents(nodePath),
+            SecurityAwarenessStage.Suspicious,
+            InfiltrationTuning.CursorMonitoredTraceIncrease,
+            $"Cursor crossed monitored node: {nodePath}");
     }
 
     public void SetCurrentFolder(string folderPath)
@@ -229,16 +315,33 @@ public sealed class InfiltrationManager
         if (visibleAgents.Count == 0)
             return;
 
-        var traceGain = directJump ? 5 : 3;
-        foreach (var agent in visibleAgents)
-        {
-            agent.IsAlerted = true;
-            agent.AwarenessStage = directJump
-                ? SecurityAwarenessStage.ActiveScan
-                : SecurityAwarenessStage.Suspicious;
-        }
+        var traceGain = directJump
+            ? InfiltrationTuning.DirectFolderJumpTraceIncrease
+            : InfiltrationTuning.FolderNavigationTraceIncrease;
 
-        AddTrace(traceGain, $"Navigated into monitored folder: {folderPath}");
+        ExecuteSecurityBehavior(
+            SecurityBehaviorKeys.FolderNavigation,
+            folderPath,
+            visibleAgents,
+            directJump ? SecurityAwarenessStage.ActiveScan : SecurityAwarenessStage.Suspicious,
+            traceGain,
+            $"Navigated into monitored folder: {folderPath}",
+            directJump);
+    }
+
+    public void TriggerSearchSweep(string nodePath)
+    {
+        var agents = SecurityAgents
+            .Where(agent => agent.AgentType is SecurityAgentType.IndexerScout or SecurityAgentType.AiMonitor)
+            .ToList();
+
+        ExecuteSecurityBehavior(
+            SecurityBehaviorKeys.SearchSweep,
+            nodePath,
+            agents,
+            SecurityAwarenessStage.ActiveScan,
+            0,
+            $"Search sweep escalated at {nodePath}");
     }
 
     public List<SecurityAgent> GetVisibleSecurityAgents(string currentFolderPath)
@@ -249,11 +352,124 @@ public sealed class InfiltrationManager
             .ToList();
     }
 
+    public bool IsNodeHiddenInPouch(string nodePath)
+    {
+        return State.PouchCache.Any(entry => string.Equals(entry.NodePath, nodePath, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public bool IsPouchMaskingBroken(string nodePath)
+    {
+        return State.ExposedPouchPaths.Contains(nodePath);
+    }
+
+    public bool HasPermissionOverride(string nodePath)
+    {
+        return GetPermissionOverrideTurns(nodePath) > 0;
+    }
+
+    public int GetPermissionOverrideTurns(string nodePath)
+    {
+        return State.PermissionOverrideTurns.GetValueOrDefault(nodePath);
+    }
+
+    public bool IsPermissionLocked(string nodePath)
+    {
+        if (HasPermissionOverride(nodePath))
+            return false;
+
+        if (GetForcedLockTurns(nodePath) > 0)
+            return true;
+
+        return SecurityAgents.Any(agent => agent.AgentType == SecurityAgentType.FirewallSentinel
+            && string.Equals(agent.CurrentNodePath, nodePath, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public bool IsPathTracked(string nodePath)
+    {
+        return GetTrackedPathTurns(nodePath) > 0;
+    }
+
+    public int GetTrackedPathTurns(string nodePath)
+    {
+        return State.TrackedPathTurns.GetValueOrDefault(nodePath);
+    }
+
+    public int GetForcedLockTurns(string nodePath)
+    {
+        return State.ForcedLockTurns.GetValueOrDefault(nodePath);
+    }
+
+    public bool HasScanPressure(string nodePath)
+    {
+        return GetScanPressureTurns(nodePath) > 0;
+    }
+
+    public int GetScanPressureTurns(string nodePath)
+    {
+        return State.ScanPressureTurns.GetValueOrDefault(nodePath);
+    }
+
+    public void MarkTrackedPath(string nodePath, int durationTurns, string reason)
+    {
+        State.TrackedPathTurns[nodePath] = Math.Max(1, durationTurns);
+        State.AddLog($"Tracked path marked: {nodePath} ({State.TrackedPathTurns[nodePath]}T) :: {reason}");
+    }
+
+    public void ApplyForcedLock(string nodePath, int durationTurns, string reason)
+    {
+        State.ForcedLockTurns[nodePath] = Math.Max(1, durationTurns);
+        State.AddLog($"Forced lock applied: {nodePath} ({State.ForcedLockTurns[nodePath]}T) :: {reason}");
+    }
+
+    public void ApplyScanPressure(string nodePath, int durationTurns, string reason)
+    {
+        State.ScanPressureTurns[nodePath] = Math.Max(1, durationTurns);
+        State.AddLog($"Scan pressure applied: {nodePath} ({State.ScanPressureTurns[nodePath]}T) :: {reason}");
+    }
+
+    public bool ClearTrackedPath(string nodePath, string reason)
+    {
+        if (!State.TrackedPathTurns.Remove(nodePath))
+            return false;
+
+        State.AddLog($"Tracked path cleared: {nodePath} :: {reason}");
+        return true;
+    }
+
+    public bool ClearScanPressure(string nodePath, string reason)
+    {
+        if (!State.ScanPressureTurns.Remove(nodePath))
+            return false;
+
+        State.AddLog($"Scan pressure cleared: {nodePath} :: {reason}");
+        return true;
+    }
+
+    public void GrantPermissionOverride(string nodePath, string reason, int traceIncrease, int durationTurns = InfiltrationTuning.PermissionOverrideDurationTurns)
+    {
+        State.PermissionOverrideTurns[nodePath] = Math.Max(InfiltrationTuning.PermissionOverrideMinimumDurationTurns, durationTurns);
+        AddTrace(traceIncrease, reason);
+        State.AddLog($"Permission override granted: {nodePath} ({State.PermissionOverrideTurns[nodePath]}T)");
+    }
+
+    public void ExposePouchHiddenNode(string nodePath, string reason, int traceIncrease)
+    {
+        if (!IsNodeHiddenInPouch(nodePath))
+            return;
+
+        State.ExposedPouchPaths.Add(nodePath);
+        AddTrace(traceIncrease, reason);
+        State.AddLog($"Pouch exposed: {nodePath}");
+    }
+
     public List<SecurityAgent> GetMonitoringAgents(string nodePath)
     {
+        var pouchHidden = IsNodeHiddenInPouch(nodePath) && !IsPouchMaskingBroken(nodePath);
+        var scanPressure = HasScanPressure(nodePath) || HasScanPressure(State.CurrentFolderPath);
         return SecurityAgents
             .Where(agent => string.Equals(agent.CurrentNodePath, nodePath, StringComparison.OrdinalIgnoreCase)
                 || IsNodeInSight(agent, nodePath))
+            .Where(agent => scanPressure || !pouchHidden || agent.AgentType is not (SecurityAgentType.IndexerScout or SecurityAgentType.AiMonitor))
             .ToList();
     }
 
@@ -295,6 +511,51 @@ public sealed class InfiltrationManager
         return true;
     }
 
+    private void TickPermissionOverrides()
+    {
+        foreach (var path in State.PermissionOverrideTurns.Keys.ToList())
+        {
+            var remaining = State.PermissionOverrideTurns[path] - 1;
+            if (remaining <= 0)
+            {
+                State.PermissionOverrideTurns.Remove(path);
+                State.AddLog($"Permission override expired: {path}");
+                continue;
+            }
+
+            State.PermissionOverrideTurns[path] = remaining;
+        }
+    }
+
+    private void TickTurnDictionary(Dictionary<string, int> turnsByPath, string expireLabel)
+    {
+        foreach (var path in turnsByPath.Keys.ToList())
+        {
+            var remaining = turnsByPath[path] - 1;
+            if (remaining <= 0)
+            {
+                turnsByPath.Remove(path);
+                State.AddLog($"{expireLabel}: {path}");
+                continue;
+            }
+
+            turnsByPath[path] = remaining;
+        }
+    }
+
+    private void ApplyTrackedPathActionTrace(string nodePath, OperationType operationType)
+    {
+        var targetTrackedTurns = GetTrackedPathTurns(nodePath);
+        var folderTrackedTurns = GetTrackedPathTurns(State.CurrentFolderPath);
+        if (targetTrackedTurns <= 0 && folderTrackedTurns <= 0)
+            return;
+
+        var trackedTurns = Math.Max(targetTrackedTurns, folderTrackedTurns);
+        AddTrace(
+            InfiltrationTuning.TrackedActionTraceBonus,
+            $"Tracked path pressure: {operationType} @ {nodePath} ({trackedTurns}T)");
+    }
+
     private void AdvanceSecurityAgents()
     {
         var activeTargets = State.ActiveOperations
@@ -329,6 +590,18 @@ public sealed class InfiltrationManager
         }
     }
 
+    private static bool TryValidateQueueEntry(CommandQueueEntry entry, out string error)
+    {
+        if (string.IsNullOrWhiteSpace(entry.PrimaryTargetPath))
+        {
+            error = $"{entry.OperationType} has no primary target path";
+            return false;
+        }
+
+        error = string.Empty;
+        return true;
+    }
+
     private FileOperation CreateOperationFromQueueEntry(CommandQueueEntry entry)
     {
         var requiredTicks = entry.OperationType switch
@@ -347,11 +620,7 @@ public sealed class InfiltrationManager
 
     private void OnOperationCompleted(FileOperation operation)
     {
-        if (operation.Type == OperationType.Copy)
-        {
-            TryCopyToClipboard(operation.TargetNodePath, ExplorerNodeKind.File);
-        }
-        else if (operation.Type == OperationType.MoveCursor)
+        if (operation.Type == OperationType.MoveCursor)
         {
             MoveCursor(operation.TargetNodePath);
         }
@@ -367,5 +636,99 @@ public sealed class InfiltrationManager
             >= 15 => SecurityAwarenessStage.Suspicious,
             _ => SecurityAwarenessStage.Passive
         };
+    }
+
+    private bool ExecuteSecurityBehavior(
+        string behaviorKey,
+        string primaryPath,
+        IReadOnlyList<SecurityAgent> agents,
+        SecurityAwarenessStage awarenessStage,
+        int traceAmount,
+        string traceReason,
+        bool directJump = false)
+    {
+        if (agents.Count == 0)
+            return false;
+
+        var executed = false;
+        foreach (var agent in agents)
+        {
+            var resolvedKey = ResolveSecurityBehaviorKey(behaviorKey, agent.AgentType);
+            var isObjectivePath = string.Equals(primaryPath, Mission.TargetPath, StringComparison.OrdinalIgnoreCase);
+            var isObjectiveRoute = IsObjectiveRoute(primaryPath, Mission.TargetPath);
+            var agentOnObjectiveRoute = IsObjectiveRoute(agent.CurrentNodePath, Mission.TargetPath);
+            executed |= _securityBehaviorExecutor.TryExecute(resolvedKey, new SecurityBehaviorContext
+            {
+                PrimaryPath = primaryPath,
+                Agent = agent,
+                Agents = new[] { agent },
+                CurrentFolderPath = State.CurrentFolderPath,
+                CursorPath = State.CursorAgent.CurrentNodePath,
+                ObjectivePath = Mission.TargetPath,
+                IsObjectivePath = isObjectivePath,
+                IsObjectiveRoute = isObjectiveRoute,
+                AgentOnObjectiveRoute = agentOnObjectiveRoute,
+                DirectJump = directJump,
+                TraceAmount = traceAmount,
+                TraceReason = traceReason,
+                AwarenessStage = awarenessStage,
+                AddTrace = AddTrace,
+                AddLog = message => State.AddLog(message),
+                AlertAgent = AlertAgent,
+                MarkTrackedPath = MarkTrackedPath,
+                ApplyForcedLock = ApplyForcedLock,
+                ApplyScanPressure = ApplyScanPressure
+            });
+        }
+
+        return executed;
+    }
+
+    private static void AlertAgent(SecurityAgent agent, SecurityAwarenessStage awarenessStage)
+    {
+        agent.IsAlerted = true;
+        agent.AwarenessStage = awarenessStage;
+    }
+
+    private static string ResolveSecurityBehaviorKey(string behaviorKey, SecurityAgentType agentType)
+    {
+        return behaviorKey switch
+        {
+            SecurityBehaviorKeys.CursorCrossedMonitoredNode => agentType switch
+            {
+                SecurityAgentType.GuardScanner => SecurityBehaviorKeys.CursorCrossedGuardScanner,
+                SecurityAgentType.IndexerScout => SecurityBehaviorKeys.CursorCrossedIndexerScout,
+                SecurityAgentType.AiMonitor => SecurityBehaviorKeys.CursorCrossedAiMonitor,
+                SecurityAgentType.FirewallSentinel => SecurityBehaviorKeys.CursorCrossedFirewallSentinel,
+                _ => behaviorKey
+            },
+            SecurityBehaviorKeys.FolderNavigation => agentType switch
+            {
+                SecurityAgentType.GuardScanner => SecurityBehaviorKeys.FolderNavigationGuardScanner,
+                SecurityAgentType.IndexerScout => SecurityBehaviorKeys.FolderNavigationIndexerScout,
+                SecurityAgentType.AiMonitor => SecurityBehaviorKeys.FolderNavigationAiMonitor,
+                SecurityAgentType.FirewallSentinel => SecurityBehaviorKeys.FolderNavigationFirewallSentinel,
+                _ => behaviorKey
+            },
+            SecurityBehaviorKeys.SearchSweep => agentType switch
+            {
+                SecurityAgentType.IndexerScout => SecurityBehaviorKeys.SearchSweepIndexerScout,
+                SecurityAgentType.AiMonitor => SecurityBehaviorKeys.SearchSweepAiMonitor,
+                _ => behaviorKey
+            },
+            _ => behaviorKey
+        };
+    }
+
+    private static bool IsObjectiveRoute(string path, string objectivePath)
+    {
+        if (string.IsNullOrWhiteSpace(path) || string.IsNullOrWhiteSpace(objectivePath))
+            return false;
+
+        if (string.Equals(path, objectivePath, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return objectivePath.StartsWith(path.TrimEnd('/') + '/', StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith(objectivePath.TrimEnd('/') + '/', StringComparison.OrdinalIgnoreCase);
     }
 }

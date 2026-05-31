@@ -1,0 +1,10 @@
+{
+  "manual_on": false,
+  "action": "resume",
+  "note": "flag_disabled",
+  "remain_sec": 0,
+  "updated_at": 1780114946,
+  "usage_pause": false,
+  "claude_remaining_pct": null,
+  "usage_source": "statusline_exception"
+}

@@ -30,4 +30,9 @@ public static class ActionConstants
     public const int CompressActionApCost = 2;
     public const int CompressEffectDuration = 3;
     public const int CompressAttackModifier = -1;
+
+    public const int LogForgeActionApCost = 1;
+    public const int SearchActionApCost = 1;
+    public const int ShowHiddenActionApCost = 1;
+    public const int PermissionOverrideActionApCost = 2;
 }

@@ -3,45 +3,40 @@ using ProjectFR.Data;
 
 namespace ProjectFR.Action.Implementations;
 
-public class CutAction : IAction
+public class CutAction : ActionBase
 {
-    public string ActionId => "cut";
-    public string DisplayName => "Cut (Ctrl+X)";
-    public int ApCost => ActionConstants.CutActionApCost;
-    public TargetType Scope => TargetType.Single;
-    public List<IActionCondition> Conditions { get; }
+    public override string ActionId => ActionIds.Cut;
+    public override string DisplayName => "Cut (Ctrl+X)";
+    public override int ApCost => ActionConstants.CutActionApCost;
+    public override TargetType Scope => TargetType.Single;
 
     public CutAction()
     {
         Conditions = new()
         {
-            new MinApCondition(ActionConstants.CutActionApCost),
+            new MinApCondition(ApCost),
             new TargetAliveCondition()
         };
     }
 
-    public bool CanExecute(ActionContext context)
-    {
-        return Conditions.All(c => c.Check(context));
-    }
-
-    public ActionResult Execute(ActionContext context)
+    public override ActionResult Execute(ActionContext context)
     {
         if (!CanExecute(context))
             return new ActionResult(false, "Cannot cut");
 
-        if (context.TargetNode == null || context.Target == null)
-            return new ActionResult(false, "No valid target");
+        if (context.TargetNode == null)
+            return new ActionResult(false, "No target node");
+        if (context.Clipboard == null)
+            return new ActionResult(false, "No clipboard available");
 
         context.Actor.ConsumeAp(ApCost);
         int damage = ActionConstants.CutDamage;
+        var target = context.Target;
+        if (target == null)
+            return new ActionResult(false, "No target available");
 
-        context.Target.TakeDamage(damage);
-
-        if (context.Clipboard != null)
-        {
-            context.Clipboard.Cut(context.TargetNode);
-        }
+        target.TakeDamage(damage);
+        context.Clipboard.Cut(context.TargetNode);
 
         return new ActionResult(true, $"Cut {context.TargetNode.Name} dealing {damage} damage", damage);
     }

@@ -8,26 +8,13 @@ namespace ProjectFR.Action.Implementations;
 /// <summary>
 /// Paste action - applies effects based on clipboard content type
 /// </summary>
-public class PasteAction : IAction
+public class PasteAction : ActionBase
 {
-    /// <summary>Gets the unique identifier for this action</summary>
-    public string ActionId => "paste";
-    
-    /// <summary>Gets the display name for this action</summary>
-    public string DisplayName => "Paste (Ctrl+V)";
-    
-    /// <summary>Gets the AP cost to execute this action</summary>
-    public int ApCost => ActionConstants.PasteActionApCost;
-    
-    /// <summary>Gets the targeting scope of this action</summary>
-    public TargetType Scope => TargetType.Single;
-    
-    /// <summary>Gets the list of conditions that must be met to execute this action</summary>
-    public List<IActionCondition> Conditions { get; }
+    public override string ActionId => ActionIds.Paste;
+    public override string DisplayName => "Paste (Ctrl+V)";
+    public override int ApCost => ActionConstants.PasteActionApCost;
+    public override TargetType Scope => TargetType.Single;
 
-    /// <summary>
-    /// Initializes a new instance of the PasteAction class
-    /// </summary>
     public PasteAction()
     {
         Conditions = new()
@@ -37,22 +24,7 @@ public class PasteAction : IAction
         };
     }
 
-    /// <summary>
-    /// Checks whether this action can be executed in the given context
-    /// </summary>
-    /// <param name="context">The action context to check</param>
-    /// <returns>True if all conditions are met, false otherwise</returns>
-    public bool CanExecute(ActionContext context)
-    {
-        return Conditions.All(c => c.Check(context));
-    }
-
-    /// <summary>
-    /// Executes the paste action
-    /// </summary>
-    /// <param name="context">The action context containing actor and target</param>
-    /// <returns>The result of the action execution</returns>
-    public ActionResult Execute(ActionContext context)
+    public override ActionResult Execute(ActionContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
 
@@ -62,11 +34,12 @@ public class PasteAction : IAction
         ArgumentNullException.ThrowIfNull(context.Clipboard);
         ArgumentNullException.ThrowIfNull(context.Target);
 
-        context.Actor.ConsumeAp(ApCost);
         var pastedNode = context.Clipboard.Paste();
 
         if (pastedNode == null)
             return new ActionResult(false, "Nothing to paste");
+
+        context.Actor.ConsumeAp(ApCost);
 
         return pastedNode switch
         {

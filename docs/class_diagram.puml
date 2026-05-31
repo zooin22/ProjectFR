@@ -1,196 +1,376 @@
 @startuml
-title ProjectFR Class Diagram
+title ProjectFR Runtime Architecture (post-pivot snapshot)
 skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
 
-' Core
-class GameManager {
-  - Instance: GameManager
-  - CurrentBattle: BattleManager?
-  - Clipboard: ClipboardSystem
-  - StatusEffects: StatusEffectSystem
-  + StartNewBattle()
-  + EndCurrentBattle()
+' ─────────────────────────────────────────
+' CORE
+' ─────────────────────────────────────────
+package "Core" {
+  class GameManager <<Autoload Singleton>> {
+    + Instance : GameManager
+    - CurrentBattle : BattleManager?
+    - Clipboard : ClipboardSystem
+    - StatusEffects : StatusEffectSystem
+    + StartNewBattle()
+    + EndCurrentBattle()
+  }
 }
 
-' Battle
-class BattleManager {
-  - Player: ActorState
-  - Enemies: List<ActorState>
-  - ActionRegistry: ActionRegistry
-  - BattleLog: List<String>
-  - CurrentState: BattleState
-  - TurnCount: int
-  + StartBattle()
-  + PlayerAction(IAction, ActionContext)
-  + ProcessEnemyTurns()
-  + EndRound()
-  + AddLog(String)
+' ─────────────────────────────────────────
+' BATTLE LAYER (legacy — kept in parallel)
+' ─────────────────────────────────────────
+package "Battle (legacy)" #EEEEEE {
+  class BattleManager <<legacy>> {
+    - Player : ActorState
+    - Enemies : List<ActorState>
+    - CurrentState : BattleState
+    - TurnCount : int
+    + StartBattle()
+    + ExecutePlayerAction(IAction, ActionContext)
+    + ProcessEnemyTurns()
+    + AddLog(string)
+  }
+
+  class ActorState {
+    + Id : string
+    + CurrentHp / MaxHp : int
+    + CurrentAp / MaxAp : int
+    + TakeDamage(int)
+    + ConsumeAp(int)
+  }
+
+  BattleManager "1" *-- "*" ActorState
 }
 
-class ActorState {
-  - Id: string
-  - DisplayName: string
-  - MaxHp: int
-  - CurrentHp: int
-  - MaxAp: int
-  - CurrentAp: int
-  - AttackPower: int
-  + TakeDamage(int)
-  + ConsumeAp(int)
-  + RestoreAp(int)
+' ─────────────────────────────────────────
+' INFILTRATION LAYER (active runtime)
+' ─────────────────────────────────────────
+package "Infiltration" {
+  class InfiltrationManager {
+    + State : InfiltrationState
+    + SecurityAgents : List<SecurityAgent>
+    + Mission : MissionData
+    + Initialize(startPath, knownNodes)
+    + ProcessPlayerTurn()
+    + ProcessSecurityTurns()
+    + EnqueueCommand(CommandQueueEntry)
+  }
+
+  class InfiltrationState {
+    + CurrentFolderPath : string
+    + TurnCount / Trace / MaxTrace : int
+    + AlertStage : SecurityAwarenessStage
+    + RunStatus : RunStatus
+    + CursorAgent : CursorAgent
+    + Windows : List<ExplorerWindowState>
+    + Clipboard : List<ClipboardEntry>
+    + PouchCache : List<ClipboardEntry>
+    + ActiveOperations : List<FileOperation>
+    + CommandQueue : List<CommandQueueEntry>
+    + EventLog : List<string>
+    + TrackedPathTurns / ForcedLockTurns / ScanPressureTurns : Dict<string,int>
+    + AddLog(string)
+  }
+
+  class CursorAgent {
+    + CurrentNodePath : string
+    + ActionPoints : int
+    + ClipboardCapacity : int
+    + PouchCapacity : int
+    + PouchMaxFileSize : long
+    + IsDetected : bool
+  }
+
+  class SecurityAgent {
+    + AgentType : SecurityAgentType
+    + PatrolRoute : List<string>
+    + SightRange : int
+    + AwarenessState : SecurityAwarenessStage
+    + BehaviorKey : string
+  }
+
+  class FileOperation {
+    + OperationType : OperationType
+    + TargetPath : string
+    + Progress : int
+    + Status : OperationStatus
+  }
+
+  class CommandQueueEntry {
+    + CommandType : string
+    + TargetPath : string
+    + ActionId : string
+  }
+
+  class ExplorerWindowState {
+    + WindowType : ExplorerWindowType
+    + Title : string
+    + BoundPath : string
+    + IsOpen / IsFocused : bool
+    + SlotIndex : int
+    + TraceModifier : int
+  }
+
+  InfiltrationManager "1" *-- "1" InfiltrationState
+  InfiltrationManager "1" o-- "*" SecurityAgent
+  InfiltrationState "1" *-- "1" CursorAgent
+  InfiltrationState "1" o-- "*" FileOperation
+  InfiltrationState "1" o-- "*" CommandQueueEntry
+  InfiltrationState "1" o-- "*" ExplorerWindowState
 }
 
-GameManager "1" o-- "1" BattleManager : manages
-BattleManager "1" *-- "*" ActorState : player/enemies
+' ─────────────────────────────────────────
+' SECURITY BEHAVIOR PIPELINE
+' ─────────────────────────────────────────
+package "Security Behavior" {
+  class SecurityBehaviorExecutor {
+    + Execute(SecurityBehaviorContext)
+  }
+  class SecurityBehaviorContext {
+    + Agent : SecurityAgent
+    + State : InfiltrationState
+    + Mission : MissionData
+  }
+  class SecurityBehaviorFactory <<static>> {
+    + Build(behaviorKey) : ISecurityBehavior
+  }
 
-' Action system
-interface IAction {
-  + ActionId: string
-  + DisplayName: string
-  + ApCost: int
-  + Scope: TargetType
-  + Conditions: List<IActionCondition>
-  + CanExecute(ActionContext): bool
-  + Execute(ActionContext): ActionResult
+  SecurityBehaviorExecutor ..> SecurityBehaviorContext : uses
+  SecurityBehaviorExecutor ..> SecurityBehaviorFactory : uses
+  InfiltrationManager ..> SecurityBehaviorExecutor : drives
 }
 
-class ActionRegistry {
-  - _actions: Dictionary<string,IAction>
-  + Register(IAction)
-  + GetAction(string): IAction?
-  + GetAllActions(): List<IAction>
-  + GetExecutableActions(ActionContext): List<IAction>
+' ─────────────────────────────────────────
+' ACTION SYSTEM
+' ─────────────────────────────────────────
+package "Action" {
+  interface IAction {
+    + ActionId : string
+    + DisplayName : string
+    + ApCost : int
+    + Scope : TargetType
+    + CanExecute(ActionContext) : bool
+    + Execute(ActionContext) : ActionResult
+  }
+
+  abstract class ActionBase {
+    + Conditions : List<IActionCondition>
+    + CanExecute(ActionContext) : bool
+  }
+
+  interface IActionCondition {
+    + ConditionId : string
+    + Check(ActionContext) : bool
+  }
+
+  note bottom of IActionCondition
+    Action.Conditions: MinAp, TargetAlive,
+    ClipboardNotEmpty, NotStatus
+  end note
+
+  class ActionRegistry {
+    + Register(IAction)
+    + GetExecutableActions(ActionContext) : List<IAction>
+  }
+
+  class ActionContext {
+    + Actor : ActorState
+    + Target : ActorState?
+    + TargetNode : NodeData?
+    + Clipboard : ClipboardSystem?
+    + StatusEffects : StatusEffectSystem?
+  }
+
+  class ActionResult {
+    + Success : bool
+    + Message : string
+  }
+
+  note bottom of IAction
+    Action.Implementations (13): Open, Copy, Cut,
+    Paste, Delete, Inspect, Compress,
+    Search, LogForge, ShowHidden,
+    Quarantine, PermissionOverride, Clean
+  end note
+
+  IAction <|.. ActionBase
+  ActionBase <|-- OpenAction
+  ActionBase <|-- DeleteAction
+  ActionBase <|-- PasteAction
+  ActionBase "1" o-- "*" IActionCondition
+  ActionRegistry "1" o-- "*" IAction
+  IAction ..> ActionContext : receives
+  IAction ..> ActionResult : returns
 }
 
-IAction <|.. OpenAction
-IAction <|.. DeleteAction
-IAction <|.. PasteAction
-OpenAction : + ActionId
-DeleteAction : + ActionId
-PasteAction : + ActionId
-ActionRegistry "1" o-- "*" IAction : stores
-
-interface IActionCondition {
-  + ConditionId: string
-  + Check(ActionContext): bool
+' ─────────────────────────────────────────
+' SKILLS (extensibility scaffold)
+' ─────────────────────────────────────────
+package "Skills" #EEFFEE {
+  class SkillCatalog {
+    + Register(SkillDefinition)
+    + Get(skillId) : SkillDefinition?
+  }
+  class SkillExecutor {
+    + Execute(SkillDefinition, context)
+  }
+  note bottom of SkillExecutor
+    Composes actions into multi-step
+    tactical skills via behavior nodes
+  end note
 }
 
-IActionCondition <|.. MinApCondition
-IActionCondition <|.. TargetAliveCondition
-IActionCondition <|.. ClipboardNotEmptyCondition
+' ─────────────────────────────────────────
+' UI / SCENE
+' ─────────────────────────────────────────
+package "Scenes" {
+  class BattleScene <<Node>> {
+    - _battleManager : BattleManager
+    - _infiltrationManager : InfiltrationManager
+    + _Ready()
+    + UpdateUI()
+    + OnActionButtonPressed(string)
+  }
 
-class ActionContext {
-  - Actor: ActorState
-  - Target: ActorState?
-  - TargetNode: NodeData?
-  - AllActors: IEnumerable<ActorState>
-  - Clipboard: ClipboardSystem?
-  - StatusEffects: StatusEffectSystem?
+  note right of BattleScene
+    Drives both layers in parallel.
+    Will phase out BattleManager calls
+    as InfiltrationManager matures.
+  end note
+
+  class MainMenu <<Control>> {
+    + _Ready()
+    - RefreshMenu()
+    - OnStartBattlePressed()
+  }
 }
 
-class ActionResult {
-  - Success: bool
-  - Message: string
-  - DamageDealt: int
-  - Data: Map
+' ─────────────────────────────────────────
+' DATA · NODES & DATA · ACTIONS
+' ─────────────────────────────────────────
+package "Data" {
+  package "Data · Nodes" {
+    abstract class NodeData {
+      + Name / Path : string
+      + IsFolder : bool
+      + Size : long
+    }
+    class FileNode
+    class FolderNode {
+      + Children : List<NodeData>
+    }
+    class SpecialFileNode
+
+    NodeData <|-- FileNode
+    NodeData <|-- FolderNode
+    FileNode <|-- SpecialFileNode
+  }
+
+  package "Data · Actions" {
+    class ContextActionData <<Resource>> {
+      + ActionId : string
+      + DisplayName : string
+      + ApCost : int
+      + Scope : TargetType
+    }
+  }
 }
 
-ActionContext "uses" --> IAction
-ActionResult <-- IAction : returns
+' ─────────────────────────────────────────
+' MISSION
+' ─────────────────────────────────────────
+package "Mission" {
+  class MissionData {
+    + Id / Title / Briefing : string
+    + Client : MissionClientProfile
+    + ObjectiveType : MissionObjectiveType
+    + TargetPath : string
+    + TurnLimit : int
+    + RewardCredits / RewardReputation : int
+    + FailurePenaltyCredits / FailureHeat : int
+  }
 
-' Data / Nodes
-abstract class NodeData {
-  - Name: string
-  - Path: string
-  - IsFolder: bool
-  - Size: long
-  + ToString()
-}
-class FileNode
-class FolderNode {
-  - Children: List<NodeData>
-  + AddChild(NodeData)
-  + RemoveChild(NodeData)
-}
-class SpecialFileNode
+  class MissionClientProfile {
+    + Name : string
+    + Faction : string
+    + Agenda / RiskNote : string
+  }
 
-NodeData <|-- FileNode
-NodeData <|-- FolderNode
-FileNode <|-- SpecialFileNode
+  enum MissionObjectiveType {
+    Extract
+    Delete
+    Scan
+  }
 
-' Systems
-class ClipboardSystem {
-  - Mode: string
-  + Copy(NodeData)
-  + Cut(NodeData)
-  + Paste(): NodeData?
-}
+  class MissionProgress {
+    + ObjectiveCompleted : bool
+    + RegisterAction(actionId, path) : string?
+    + Resolve(...) : MissionResult
+  }
 
-class StatusEffectSystem {
-  + AddEffect(actorId, StatusEffect, duration)
-  + UpdateDurations()
-  + HasEffect(actorId, StatusEffect): bool
-}
+  class MissionResult {
+    + Success : bool
+    + Summary : string
+    + CreditsDelta / ReputationDelta / HeatDelta : int
+    + TurnsUsed : int
+  }
 
-' UI / Scene
-class BattleScene {
-  - _battleManager: BattleManager
-  - _actionRegistry: ActionRegistry
-  - _enemyNodes: Dictionary<string,NodeData>
-  - UI elements...
-  + _Ready()
-  + UpdateUI()
-  + OnActionButtonPressed(string)
-}
+  class CampaignState <<static>> {
+    + Credits / Reputation / Heat : int
+    + MissionBoard : IReadOnlyList<MissionData>
+    + CurrentMission : MissionData?
+    + GetModifiers() : CampaignModifiers
+    + ApplyMissionResult(MissionResult)
+  }
 
-BattleScene --> BattleManager : uses
-BattleScene --> ActionRegistry : uses
-BattleScene --> NodeData : references
+  class CampaignModifiers {
+    + HeatTurnPenalty : int
+    + EnemyAttackBonus / ApBonus / HpBonus : int
+    + Summary : string
+  }
 
-' Constants / Resources
-class ActionConstants {
-  + PasteActionApCost: int
-  + PasteFileDamage: int
-  + PasteSpecialFileBaseDamage: int
-  + PasteSpecialFileMultiplier: double
-  + QuarantineEffectDuration: int
-}
-
-class BattleConstants {
-  + MaxBattleLogEntries: int
-  + UIBattleLogDisplayLines: int
-  + DefaultPlayerMaxHp: int
-  + DefaultPlayerMaxAp: int
+  MissionData "1" *-- "1" MissionClientProfile
+  MissionData ..> MissionObjectiveType
+  MissionProgress --> MissionData
+  MissionProgress ..> MissionResult : returns
+  CampaignState "1" o-- "*" MissionData
+  CampaignState ..> CampaignModifiers : returns
 }
 
-' ContextActionData (Godot Resource)
-class ContextActionData {
-  + ActionId: string
-  + DisplayName: string
-  + ApCost: int
-  + Scope: TargetType
-  + Conditions: Array<Resource>
+' ─────────────────────────────────────────
+' SYSTEMS (battle layer, shared)
+' ─────────────────────────────────────────
+package "Systems" {
+  class ClipboardSystem {
+    + Copy(NodeData)
+    + Cut(NodeData)
+    + Paste() : NodeData?
+  }
+  class StatusEffectSystem {
+    + AddEffect(actorId, effect, duration)
+    + HasEffect(actorId, effect) : bool
+    + UpdateDurations()
+  }
 }
 
-' Notes
-note left of PasteAction
-  PasteAction currently contains
-  a SpecialFileNode definition in
-  some commits. Recommended: move
-  SpecialFileNode to ProjectFR.Data.Nodes
-end note
+' ─────────────────────────────────────────
+' TOP-LEVEL WIRING
+' ─────────────────────────────────────────
+GameManager "1" o-- "0..1" BattleManager
+GameManager "1" o-- "1" ClipboardSystem
+GameManager "1" o-- "1" StatusEffectSystem
 
-note right of BattleManager
-  BattleManager coordinates turns,
-  applies status effects and manages
-  battle log and state transitions.
-end note
+BattleScene --> BattleManager : legacy path
+BattleScene --> InfiltrationManager : active path
+BattleScene --> ActionRegistry : resolves actions
+BattleScene --> CampaignState : reads modifiers
 
-' Associations overview
 BattleManager ..> ActionRegistry : uses
 BattleManager ..> ClipboardSystem : uses
 BattleManager ..> StatusEffectSystem : uses
-IAction ..> ActionContext : inputs
-IAction ..> ActionResult : outputs
+
+InfiltrationManager ..> MissionData : runs
+MainMenu --> CampaignState : browses board
 
 @enduml

@@ -35,13 +35,26 @@ public partial class GameManager : Node
     /// </summary>
     public override void _EnterTree()
     {
+        DebugLog.Initialize();
+
         if (Instance != null)
         {
+            DebugLog.Warn(nameof(GameManager), "duplicate instance detected; freeing new node");
             QueueFree();
             return;
         }
         Instance = this;
+        DebugLog.Info(nameof(GameManager), "singleton ready");
         SetProcessUnhandledInput(true);
+    }
+
+    /// <summary>
+    /// Called when the node is removed from the scene tree
+    /// </summary>
+    public override void _ExitTree()
+    {
+        if (Instance == this)
+            Instance = null!;
     }
 
     /// <summary>
@@ -49,6 +62,12 @@ public partial class GameManager : Node
     /// </summary>
     public void StartNewBattle()
     {
+        if (CurrentBattle != null)
+        {
+            DebugLog.Warn(nameof(GameManager), "StartNewBattle called while a battle is already active; ignoring");
+            return;
+        }
+        DebugLog.Info(nameof(GameManager), "starting new battle");
         CurrentBattle = new BattleManager(BattleFactory.CreateDefaultPlayer());
         CurrentBattle.StartBattle();
     }
@@ -58,6 +77,7 @@ public partial class GameManager : Node
     /// </summary>
     public void EndCurrentBattle()
     {
+        DebugLog.Info(nameof(GameManager), "ending current battle");
         CurrentBattle = null;
     }
 }

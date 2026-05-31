@@ -3,43 +3,31 @@ using ProjectFR.Data;
 
 namespace ProjectFR.Action.Implementations;
 
-public class CopyAction : IAction
+public class CopyAction : ActionBase
 {
-    public string ActionId => "copy";
-    public string DisplayName => "Copy (Ctrl+C)";
-    public int ApCost => ActionConstants.CopyActionApCost;
-    public TargetType Scope => TargetType.Single;
-    public List<IActionCondition> Conditions { get; }
+    public override string ActionId => ActionIds.Copy;
+    public override string DisplayName => "Copy (Ctrl+C)";
+    public override int ApCost => ActionConstants.CopyActionApCost;
+    public override TargetType Scope => TargetType.Single;
 
     public CopyAction()
     {
         Conditions = new()
         {
-            new MinApCondition(ActionConstants.CopyActionApCost)
+            new MinApCondition(ApCost)
         };
     }
 
-    public bool CanExecute(ActionContext context)
+    public override ActionResult Execute(ActionContext context)
     {
-        return Conditions.All(c => c.Check(context));
-    }
-
-    public ActionResult Execute(ActionContext context)
-    {
-        if (!CanExecute(context))
-            return new ActionResult(false, "Cannot copy");
-
         if (context.TargetNode == null)
             return new ActionResult(false, "No target to copy");
 
+        if (context.Clipboard == null)
+            return new ActionResult(false, "Clipboard unavailable");
+
         context.Actor.ConsumeAp(ApCost);
-
-        if (context.Clipboard != null)
-        {
-            context.Clipboard.Copy(context.TargetNode);
-            return new ActionResult(true, $"Copied {context.TargetNode.Name} to clipboard");
-        }
-
-        return new ActionResult(false, "Clipboard unavailable");
+        context.Clipboard.Copy(context.TargetNode);
+        return new ActionResult(true, $"Copied {context.TargetNode.Name} to clipboard");
     }
 }

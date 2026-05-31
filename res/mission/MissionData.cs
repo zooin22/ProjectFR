@@ -13,6 +13,7 @@ public class MissionData
     public int RewardReputation { get; }
     public int FailurePenaltyCredits { get; }
     public int FailureHeat { get; }
+    public string? PrerequisiteMissionId { get; }
 
     public MissionData(
         string id,
@@ -25,7 +26,8 @@ public class MissionData
         int rewardCredits,
         int rewardReputation,
         int failurePenaltyCredits,
-        int failureHeat)
+        int failureHeat,
+        string? prerequisiteMissionId = null)
     {
         Id = id;
         Title = title;
@@ -38,5 +40,6 @@ public class MissionData
         RewardReputation = rewardReputation;
         FailurePenaltyCredits = failurePenaltyCredits;
         FailureHeat = failureHeat;
+        PrerequisiteMissionId = prerequisiteMissionId;
     }
 }

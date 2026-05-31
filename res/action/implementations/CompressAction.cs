@@ -4,35 +4,31 @@ using ProjectFR.Systems;
 
 namespace ProjectFR.Action.Implementations;
 
-public class CompressAction : IAction
+public class CompressAction : ActionBase
 {
-    public string ActionId => "compress";
-    public string DisplayName => "Compress (M)";
-    public int ApCost => ActionConstants.CompressActionApCost;
-    public TargetType Scope => TargetType.Single;
-    public List<IActionCondition> Conditions { get; }
+    public override string ActionId => ActionIds.Compress;
+    public override string DisplayName => "Compress (M)";
+    public override int ApCost => ActionConstants.CompressActionApCost;
+    public override TargetType Scope => TargetType.Single;
 
     public CompressAction()
     {
         Conditions = new()
         {
-            new MinApCondition(ActionConstants.CompressActionApCost),
+            new MinApCondition(ApCost),
             new TargetAliveCondition()
         };
     }
 
-    public bool CanExecute(ActionContext context)
-    {
-        return Conditions.All(c => c.Check(context));
-    }
-
-    public ActionResult Execute(ActionContext context)
+    public override ActionResult Execute(ActionContext context)
     {
         if (!CanExecute(context))
             return new ActionResult(false, "Cannot compress");
 
-        if (context.Target == null || context.StatusEffects == null)
-            return new ActionResult(false, "Invalid target or status effects system");
+        if (context.Target == null)
+            return new ActionResult(false, "No target");
+        if (context.StatusEffects == null)
+            return new ActionResult(false, "Status effects system not available");
 
         context.Actor.ConsumeAp(ApCost);
 
@@ -43,6 +39,6 @@ public class CompressAction : IAction
             ActionConstants.CompressAttackModifier
         );
 
-        return new ActionResult(true, $"Compressed {context.TargetNode?.Name} reducing attack by {Math.Abs(ActionConstants.CompressAttackModifier)} for {ActionConstants.CompressEffectDuration} turns");
+        return new ActionResult(true, $"Compressed {context.TargetNode?.Name ?? context.Target.Id ?? "unknown"} reducing attack by {System.Math.Abs(ActionConstants.CompressAttackModifier)} for {ActionConstants.CompressEffectDuration} turns");
     }
 }

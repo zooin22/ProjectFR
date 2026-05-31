@@ -4,13 +4,12 @@ using ProjectFR.Systems;
 
 namespace ProjectFR.Action.Implementations;
 
-public class CleanAction : IAction
+public class CleanAction : ActionBase
 {
-    public string ActionId => "clean";
-    public string DisplayName => "Clean (L)";
-    public int ApCost => ActionConstants.CleanActionApCost;
-    public TargetType Scope => TargetType.AoE;
-    public List<IActionCondition> Conditions { get; }
+    public override string ActionId => ActionIds.Clean;
+    public override string DisplayName => "Clean (L)";
+    public override int ApCost => ActionConstants.CleanActionApCost;
+    public override TargetType Scope => TargetType.AoE;
 
     public CleanAction()
     {
@@ -20,12 +19,7 @@ public class CleanAction : IAction
         };
     }
 
-    public bool CanExecute(ActionContext context)
-    {
-        return Conditions.All(c => c.Check(context));
-    }
-
-    public ActionResult Execute(ActionContext context)
+    public override ActionResult Execute(ActionContext context)
     {
         if (!CanExecute(context))
             return new ActionResult(false, "Cannot execute Clean action");

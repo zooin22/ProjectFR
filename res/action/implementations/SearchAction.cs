@@ -3,13 +3,12 @@ using ProjectFR.Data;
 
 namespace ProjectFR.Action.Implementations;
 
-public class SearchAction : IAction
+public class SearchAction : ActionBase
 {
-    public string ActionId => "search";
-    public string DisplayName => "Search";
-    public int ApCost => 1;
-    public TargetType Scope => TargetType.Single;
-    public List<IActionCondition> Conditions { get; }
+    public override string ActionId => ActionIds.Search;
+    public override string DisplayName => "Search";
+    public override int ApCost => ActionConstants.SearchActionApCost;
+    public override TargetType Scope => TargetType.Single;
 
     public SearchAction()
     {
@@ -20,12 +19,7 @@ public class SearchAction : IAction
         };
     }
 
-    public bool CanExecute(ActionContext context)
-    {
-        return Conditions.All(c => c.Check(context));
-    }
-
-    public ActionResult Execute(ActionContext context)
+    public override ActionResult Execute(ActionContext context)
     {
         if (!CanExecute(context))
             return new ActionResult(false, "Cannot search");

@@ -5,5 +5,10 @@
       "Bash(Select-Object -First 50)",
       "Bash(Format-Table Name, PSPath)"
     ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "node C:\\Users\\zooin\\.claude\\plugins\\cache\\claude-dashboard\\claude-dashboard\\1.26.2\\dist\\index.js",
+    "padding": 0
   }
 }

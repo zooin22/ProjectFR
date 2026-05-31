@@ -14,6 +14,12 @@ public sealed class InfiltrationState
     public HashSet<string> KnownNodePaths { get; } = new(StringComparer.OrdinalIgnoreCase);
     public List<ExplorerWindowState> Windows { get; } = new();
     public List<ClipboardEntry> Clipboard { get; } = new();
+    public List<ClipboardEntry> PouchCache { get; } = new();
+    public HashSet<string> ExposedPouchPaths { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, int> PermissionOverrideTurns { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, int> TrackedPathTurns { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, int> ForcedLockTurns { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, int> ScanPressureTurns { get; } = new(StringComparer.OrdinalIgnoreCase);
     public List<FileOperation> ActiveOperations { get; } = new();
     public List<CommandQueueEntry> CommandQueue { get; } = new();
     public List<string> EventLog { get; } = new();

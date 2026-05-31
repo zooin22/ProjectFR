@@ -15,6 +15,11 @@
 - `ui/badge_trace_mid.svg`
 - `ui/badge_trace_high.svg`
 - `ui/badge_alert.svg`
+- `ui/badge_watch.svg`
+- `ui/badge_lock.svg`
+- `ui/badge_override.svg`
+- `ui/badge_tracked.svg`
+- `ui/badge_pressure.svg`
 
 ## Agents
 - `agents/cursor_agent.svg`

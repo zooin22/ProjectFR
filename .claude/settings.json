@@ -1,0 +1,7 @@
+{
+  "statusLine": {
+    "type": "command",
+    "command": "powershell -ExecutionPolicy Bypass -File \"F:\\Agent\\openclaw\\workspace\\skills\\provider-usage-check\\scripts\\provider_usage_statusline.ps1\" -ClaudeStatusLine",
+    "padding": 0
+  }
+}

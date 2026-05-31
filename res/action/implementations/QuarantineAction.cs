@@ -4,13 +4,12 @@ using ProjectFR.Systems;
 
 namespace ProjectFR.Action.Implementations;
 
-public class QuarantineAction : IAction
+public class QuarantineAction : ActionBase
 {
-    public string ActionId => "quarantine";
-    public string DisplayName => "Quarantine (Q)";
-    public int ApCost => ActionConstants.QuarantineActionApCost;
-    public TargetType Scope => TargetType.Single;
-    public List<IActionCondition> Conditions { get; }
+    public override string ActionId => ActionIds.Quarantine;
+    public override string DisplayName => "Quarantine (Q)";
+    public override int ApCost => ActionConstants.QuarantineActionApCost;
+    public override TargetType Scope => TargetType.Single;
 
     public QuarantineAction()
     {
@@ -21,12 +20,7 @@ public class QuarantineAction : IAction
         };
     }
 
-    public bool CanExecute(ActionContext context)
-    {
-        return Conditions.All(c => c.Check(context));
-    }
-
-    public ActionResult Execute(ActionContext context)
+    public override ActionResult Execute(ActionContext context)
     {
         if (!CanExecute(context))
             return new ActionResult(false, "Cannot quarantine");

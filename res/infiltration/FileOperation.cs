@@ -1,38 +1,5 @@
 namespace ProjectFR.Infiltration;
 
-public enum OperationType
-{
-    MoveCursor,
-    Access,
-    Copy,
-    Paste,
-    Move,
-    Delete,
-    ShiftDelete,
-    Rename,
-    Compress,
-    ExtractArchive,
-    Properties,
-    Search,
-    Sort,
-    ShowHidden,
-    RewriteLog,
-    Inject,
-    Stun,
-    Decoy,
-    PermissionOverride
-}
-
-public enum OperationStatus
-{
-    Queued,
-    Running,
-    Completed,
-    Interrupted,
-    Failed,
-    Cancelled
-}
-
 public sealed class FileOperation
 {
     public string Id { get; } = Guid.NewGuid().ToString("N");

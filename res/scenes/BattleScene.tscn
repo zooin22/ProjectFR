@@ -18,7 +18,27 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.145098, 0.164706, 0.192157, 1)
+color = Color(0.761, 0.800, 0.839, 1)
+
+[node name="AppWindowShadow" type="ColorRect" parent="."]
+layout_mode = 1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10
+offset_top = 10
+offset_right = -10
+offset_bottom = -10
+color = Color(0.0, 0.02, 0.05, 0.14)
+
+[node name="AppWindowBody" type="ColorRect" parent="."]
+layout_mode = 1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 18
+offset_top = 18
+offset_right = -18
+offset_bottom = -18
+color = Color(0.922, 0.929, 0.937, 1)
 
 [node name="RootMargin" type="MarginContainer" parent="."]
 layout_mode = 1
@@ -40,6 +60,12 @@ theme_override_constants/separation = 12
 [node name="TopPanel" type="PanelContainer" parent="RootMargin/MainVBox"]
 custom_minimum_size = Vector2(0, 168)
 layout_mode = 2
+
+[node name="AppWindowTitleBarBg" type="ColorRect" parent="RootMargin/MainVBox/TopPanel"]
+layout_mode = 2
+size_flags_vertical = 0
+custom_minimum_size = Vector2(0, 34)
+color = Color(0.149, 0.224, 0.325, 1)
 
 [node name="TopMargin" type="MarginContainer" parent="RootMargin/MainVBox/TopPanel"]
 layout_mode = 2
@@ -462,6 +488,11 @@ custom_minimum_size = Vector2(120, 34)
 layout_mode = 2
 text = "Clipboard"
 
+[node name="TempWindowButton" type="Button" parent="RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox/CommandQueuePanel/CommandQueueMargin/CommandQueueVBox/CommandQueueButtonRow"]
+custom_minimum_size = Vector2(120, 34)
+layout_mode = 2
+text = "Temp"
+
 [node name="MoveCursorButton" type="Button" parent="RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox/CommandQueuePanel/CommandQueueMargin/CommandQueueVBox/CommandQueueButtonRow"]
 custom_minimum_size = Vector2(120, 34)
 layout_mode = 2
@@ -554,6 +585,12 @@ offset_top = 170.0
 offset_right = 1220.0
 offset_bottom = 390.0
 
+[node name="ClipboardTitleBarBg" type="ColorRect" parent="ClipboardWindow"]
+layout_mode = 2
+size_flags_vertical = 0
+custom_minimum_size = Vector2(0, 36)
+color = Color(0.149, 0.224, 0.325, 1)
+
 [node name="ClipboardWindowMargin" type="MarginContainer" parent="ClipboardWindow"]
 layout_mode = 2
 theme_override_constants/margin_left = 10
@@ -571,16 +608,16 @@ layout_mode = 2
 [node name="ClipboardWindowTitle" type="Label" parent="ClipboardWindow/ClipboardWindowMargin/ClipboardWindowVBox/ClipboardWindowHeaderRow"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Clipboard Window"
+text = "Clipboard"
 
 [node name="ClipboardWindowMeta" type="Label" parent="ClipboardWindow/ClipboardWindowMargin/ClipboardWindowVBox/ClipboardWindowHeaderRow"]
 layout_mode = 2
-text = "Aux"
+text = ""
 
 [node name="ClipboardWindowCloseButton" type="Button" parent="ClipboardWindow/ClipboardWindowMargin/ClipboardWindowVBox/ClipboardWindowHeaderRow"]
-custom_minimum_size = Vector2(56, 28)
+custom_minimum_size = Vector2(28, 26)
 layout_mode = 2
-text = "Close"
+text = "×"
 
 [node name="ClipboardWindowStatusLabel" type="Label" parent="ClipboardWindow/ClipboardWindowMargin/ClipboardWindowVBox"]
 layout_mode = 2
@@ -589,6 +626,75 @@ autowrap_mode = 2
 
 [node name="ClipboardWindowItemsLabel" type="RichTextLabel" parent="ClipboardWindow/ClipboardWindowMargin/ClipboardWindowVBox"]
 custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+scroll_following = true
+
+[node name="ClipboardWindowActionRow" type="HBoxContainer" parent="ClipboardWindow/ClipboardWindowMargin/ClipboardWindowVBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="StoreInPouchButton" type="Button" parent="ClipboardWindow/ClipboardWindowMargin/ClipboardWindowVBox/ClipboardWindowActionRow"]
+custom_minimum_size = Vector2(120, 30)
+layout_mode = 2
+text = "Store in Pouch"
+
+[node name="RestoreFromPouchButton" type="Button" parent="ClipboardWindow/ClipboardWindowMargin/ClipboardWindowVBox/ClipboardWindowActionRow"]
+custom_minimum_size = Vector2(136, 30)
+layout_mode = 2
+text = "Restore to Clipboard"
+
+[node name="TempWindow" type="PanelContainer" parent="."]
+visible = false
+custom_minimum_size = Vector2(320, 200)
+layout_mode = 1
+offset_left = 560.0
+offset_top = 170.0
+offset_right = 880.0
+offset_bottom = 370.0
+
+[node name="TempTitleBarBg" type="ColorRect" parent="TempWindow"]
+layout_mode = 2
+size_flags_vertical = 0
+custom_minimum_size = Vector2(0, 36)
+color = Color(0.149, 0.224, 0.325, 1)
+
+[node name="TempWindowMargin" type="MarginContainer" parent="TempWindow"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="TempWindowVBox" type="VBoxContainer" parent="TempWindow/TempWindowMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TempWindowHeaderRow" type="HBoxContainer" parent="TempWindow/TempWindowMargin/TempWindowVBox"]
+layout_mode = 2
+
+[node name="TempWindowTitle" type="Label" parent="TempWindow/TempWindowMargin/TempWindowVBox/TempWindowHeaderRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Temp Operations"
+
+[node name="TempWindowMeta" type="Label" parent="TempWindow/TempWindowMargin/TempWindowVBox/TempWindowHeaderRow"]
+layout_mode = 2
+text = ""
+
+[node name="TempWindowCloseButton" type="Button" parent="TempWindow/TempWindowMargin/TempWindowVBox/TempWindowHeaderRow"]
+custom_minimum_size = Vector2(28, 26)
+layout_mode = 2
+text = "×"
+
+[node name="TempWindowStatusLabel" type="Label" parent="TempWindow/TempWindowMargin/TempWindowVBox"]
+layout_mode = 2
+text = "Temp window offline"
+autowrap_mode = 2
+
+[node name="TempWindowItemsLabel" type="RichTextLabel" parent="TempWindow/TempWindowMargin/TempWindowVBox"]
+custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
 size_flags_vertical = 3
 bbcode_enabled = true

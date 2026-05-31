@@ -1,5 +1,10 @@
 # ProjectFR - Mission Factions
 
+> Status: active — design intent canonical; in-game wiring partial (see §Implementation Status)
+> Read with: `STORY_WORLD.md`, `GAME_CONCEPT.md`, `MISSION_DATA_MODEL.md`
+> Related: `res/mission/`
+
+
 ## Purpose
 
 이 문서는 의뢰인 세력과 그들이 주는 미션 톤을 정리한 초안이다.
@@ -114,11 +119,27 @@
 
 ---
 
-## Current In-Game Use
+## Implementation Status
 
-현재 프로토타입에서 이 세력 문서는 아래 요소에 바로 연결된다.
+이 섹션은 문서의 설계 의도(Design Intent)와 실제 코드에 연결된 것(Wired)을 구분한다.
+상세 코드 매핑은 `MISSION_DATA_MODEL.md`를 참고.
 
-- 메인 메뉴 계약 정보
-- 미션 브리핑 문구
-- 보상/리스크 성향
-- 추후 의뢰 체인 및 평판 분기
+### 현재 코드에 연결된 것 (Wired)
+
+- `MissionClientProfile` — `FactionId` (typed enum), `Faction` (derived display string), `Name`, `Agenda`, `RiskNote`. 5개 세력 인스턴스 `MissionBoardFactory`에 정의.
+- `MissionData` — 제목, 목적 타입(`MissionObjectiveType`), 타깃 경로, 턴 제한, 보상/페널티. `PrerequisiteMissionId : string?` 추가 — null이면 항상 해금, 값이 있으면 해당 미션 ID 완료 후 해금.
+- `MissionObjectiveType` 열거형 — `Extract`, `Delete`, `Scan`, `Modify`, `Escape` 정의됨. 기본 보드는 `Extract/Delete/Scan` 사용.
+- `CampaignState` — `Credits`(초기 100), `Reputation`(전역), `Heat` 전역 관리. **세력별 평판**: `GetFactionReputation(FactionId)` (딕셔너리 기반, 기본 0). **완료 미션 추적**: `_completedMissionIds`; `ApplyMissionResult`가 성공 시 미션 ID 기록. **가용 미션 필터**: `IsMissionAvailable(MissionData)` + `GetAvailableMissions()` — 네비게이션/선택이 잠긴 미션을 건너뜀.
+- `MissionProgress` — 단일 목표 완료 추적; `RegisterAction` 매핑 (Extract→copy, Delete→delete, Scan→inspect, Modify→logforge) + `RegisterEscape` 지원.
+- `MissionResult` + `ApplyMissionResult` — 결과 스냅샷; Credits/전역 Reputation/Heat 반영, 세력 평판도 함께 업데이트.
+- `MainMenu` — 세력명, 브리핑, 의뢰 성향, 리스크, 보상, 오퍼레이터 상태 표시. 계약 선택(이전/다음)은 가용 미션 범위 내에서만 순환.
+- **미션 선행 예시**: "Burn Notice" (`mission_delete_boss`) — "Archive Lift" (`mission_extract_boss`) 성공 후 해금. 같은 `BossZipPath`를 두고 회수(Morrow Proxy) → 소각(Ember Circuit) 의뢰 충돌 구조.
+
+### 설계 의도만 있고 아직 미연결 (Design Intent Only)
+
+- 세력 평판 수치가 아직 런타임 분기에 활용되지 않음 — 데이터 구조는 존재하나 잠금 조건이나 위험도 보정 등에 연결되지 않았다.
+- 복합 선행 조건 — 현재 `PrerequisiteMissionId`는 단일 ID만 지원. 복수 조건·평판 임계값 기반 해금은 미구현.
+- `MissionObjectiveType.Modify`·`Escape` 사용 미션 없음 — 열거형 및 `MissionProgress` 처리는 구현됨, 기본 보드에 예시 없음.
+- 충돌 감지 — 같은 `TargetPath`를 두고 대립하는 세력 의뢰 간 긴장이 코드로 표면화되지 않음.
+
+> 이 섹션은 구현이 진행됨에 따라 갱신한다. Wired 항목 추가 시 관련 클래스/파일명을 함께 기록할 것.

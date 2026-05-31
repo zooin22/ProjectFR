@@ -3,13 +3,12 @@ using ProjectFR.Data;
 
 namespace ProjectFR.Action.Implementations;
 
-public class DeleteAction : IAction
+public class DeleteAction : ActionBase
 {
-    public string ActionId => "delete";
-    public string DisplayName => "Delete";
-    public int ApCost => ActionConstants.DeleteActionApCost;
-    public TargetType Scope => TargetType.Single;
-    public List<IActionCondition> Conditions { get; }
+    public override string ActionId => ActionIds.Delete;
+    public override string DisplayName => "Delete";
+    public override int ApCost => ActionConstants.DeleteActionApCost;
+    public override TargetType Scope => TargetType.Single;
 
     public DeleteAction()
     {
@@ -20,25 +19,20 @@ public class DeleteAction : IAction
         };
     }
 
-    public bool CanExecute(ActionContext context)
+    public override ActionResult Execute(ActionContext context)
     {
-        return Conditions.All(c => c.Check(context));
-    }
+        if (context.Actor == null)
+            return new ActionResult(false, "No valid actor");
 
-    public ActionResult Execute(ActionContext context)
-    {
+        if (context.Target == null)
+            return new ActionResult(false, "No valid target");
+
         if (!CanExecute(context))
-            return new ActionResult(false, "Cannot execute Delete action");
+            return new ActionResult(false, "Delete prerequisites not met");
 
-        context.Actor.ConsumeAp(ApCost);
         int damage = ActionConstants.DeleteDamage;
-
-        if (context.Target != null)
-        {
-            context.Target.TakeDamage(damage);
-            return new ActionResult(true, $"Deleted {context.TargetNode?.Name} dealing {damage} damage", damage);
-        }
-
-        return new ActionResult(false, "No valid target");
+        context.Actor.ConsumeAp(ApCost);
+        context.Target.TakeDamage(damage);
+        return new ActionResult(true, $"Deleted {context.TargetNode?.Name ?? "unknown"} dealing {damage} damage", damage);
     }
 }

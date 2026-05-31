@@ -3,34 +3,30 @@ using ProjectFR.Data;
 
 namespace ProjectFR.Action.Implementations;
 
-public class LogForgeAction : IAction
+public class LogForgeAction : ActionBase
 {
-    public string ActionId => "logforge";
-    public string DisplayName => "Rewrite Log";
-    public int ApCost => 1;
-    public TargetType Scope => TargetType.Single;
-    public List<IActionCondition> Conditions { get; }
+    public override string ActionId => ActionIds.LogForge;
+    public override string DisplayName => "Rewrite Log";
+    public override int ApCost => ActionConstants.LogForgeActionApCost;
+    public override TargetType Scope => TargetType.Single;
 
     public LogForgeAction()
     {
         Conditions = new()
         {
-            new MinApCondition(ApCost),
-            new TargetAliveCondition()
+            new MinApCondition(ApCost)
         };
     }
 
-    public bool CanExecute(ActionContext context)
+    public override ActionResult Execute(ActionContext context)
     {
-        return Conditions.All(c => c.Check(context));
-    }
+        if (context.Actor == null)
+            return new ActionResult(false, "No actor in context");
 
-    public ActionResult Execute(ActionContext context)
-    {
-        if (!CanExecute(context))
-            return new ActionResult(false, "Cannot rewrite log");
+        if (context.TargetNode == null)
+            return new ActionResult(false, "No target selected");
 
         context.Actor.ConsumeAp(ApCost);
-        return new ActionResult(true, $"Rewrote traces around {context.TargetNode?.Name}");
+        return new ActionResult(true, $"Rewrote traces around {context.TargetNode.Name}");
     }
 }

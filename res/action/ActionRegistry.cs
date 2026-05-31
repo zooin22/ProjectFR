@@ -4,7 +4,7 @@ namespace ProjectFR.Action;
 
 public class ActionRegistry
 {
-    private Dictionary<string, IAction> _actions = new();
+    private Dictionary<string, IAction> _actions = new(StringComparer.OrdinalIgnoreCase);
 
     public ActionRegistry()
     {
@@ -24,6 +24,8 @@ public class ActionRegistry
         Register(new CompressAction());
         Register(new LogForgeAction());
         Register(new SearchAction());
+        Register(new ShowHiddenAction());
+        Register(new PermissionOverrideAction());
     }
 
     public void Register(IAction action)

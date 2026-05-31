@@ -4,13 +4,12 @@ using ProjectFR.Data.Nodes;
 
 namespace ProjectFR.Action.Implementations;
 
-public class OpenAction : IAction
+public class OpenAction : ActionBase
 {
-    public string ActionId => "open";
-    public string DisplayName => "Open (Enter)";
-    public int ApCost => ActionConstants.OpenActionApCost;
-    public TargetType Scope => TargetType.Single;
-    public List<IActionCondition> Conditions { get; }
+    public override string ActionId => ActionIds.Open;
+    public override string DisplayName => "Open (Enter)";
+    public override int ApCost => ActionConstants.OpenActionApCost;
+    public override TargetType Scope => TargetType.Single;
 
     public OpenAction()
     {
@@ -21,12 +20,7 @@ public class OpenAction : IAction
         };
     }
 
-    public bool CanExecute(ActionContext context)
-    {
-        return Conditions.All(c => c.Check(context));
-    }
-
-    public ActionResult Execute(ActionContext context)
+    public override ActionResult Execute(ActionContext context)
     {
         if (!CanExecute(context))
             return new ActionResult(false, "Cannot execute Open action");

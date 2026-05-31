@@ -1,3 +1,5 @@
+using ProjectFR.Action;
+
 namespace ProjectFR.Mission;
 
 public class MissionProgress
@@ -19,10 +21,12 @@ public class MissionProgress
 
         bool matched = Mission.ObjectiveType switch
         {
-            MissionObjectiveType.Extract => actionId == "copy",
-            MissionObjectiveType.Delete => actionId == "delete",
-            MissionObjectiveType.Scan => actionId == "inspect",
-            _ => false
+            MissionObjectiveType.Extract => actionId == ActionIds.Copy,
+            MissionObjectiveType.Delete  => actionId == ActionIds.Delete,
+            MissionObjectiveType.Scan    => actionId == ActionIds.Inspect,
+            MissionObjectiveType.Modify  => actionId == ActionIds.LogForge,
+            MissionObjectiveType.Escape  => actionId == ActionIds.Extract,
+            _                            => false
         };
 
         if (!matched)
@@ -32,9 +36,19 @@ public class MissionProgress
         return $"Mission objective complete: {Mission.ObjectiveType} @ {Mission.TargetPath}";
     }
 
+    public string? RegisterEscape(string? currentPath)
+    {
+        if (_objectiveCompleted || Mission.ObjectiveType != MissionObjectiveType.Escape)
+            return null;
+
+        _objectiveCompleted = true;
+        var resolvedPath = string.IsNullOrWhiteSpace(currentPath) ? "extraction point" : currentPath;
+        return $"Mission objective complete: {Mission.ObjectiveType} @ {resolvedPath}";
+    }
+
     public bool HasExceededTurnLimit(int turnCount, int turnLimit)
     {
-        return turnCount > turnLimit;
+        return turnCount >= turnLimit;
     }
 
     public MissionResult Resolve(bool playerSurvived, bool extracted, int turnsUsed, int turnLimit)

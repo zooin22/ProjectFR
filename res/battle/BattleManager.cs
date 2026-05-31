@@ -1,4 +1,5 @@
 using ProjectFR.Action;
+using ProjectFR.Core;
 using ProjectFR.Data;
 using ProjectFR.Systems;
 
@@ -124,6 +125,9 @@ public class BattleManager
             }
 
             _statusEffects.UpdateDurations(enemy.Id);
+
+            if (!Player.IsAlive)
+                break;
         }
 
         CurrentState = BattleState.EndTurn;
@@ -136,9 +140,11 @@ public class BattleManager
         context.Target = Player;
         context.Clipboard = _clipboard;
         context.StatusEffects = _statusEffects;
-        context.AllActors = Enemies;
+        context.AllActors = new List<ActorState> { Player };
 
-        var executableActions = _actionRegistry.GetExecutableActions(context);
+        var executableActions = _actionRegistry.GetExecutableActions(context)
+            .Where(a => a.ApCost > 0)
+            .ToList();
         if (executableActions.Count == 0)
         {
             int damage = System.Math.Max(1, enemy.AttackPower + _statusEffects.GetAttackModifier(enemy.Id));
@@ -199,6 +205,7 @@ public class BattleManager
     public void AddLog(string message)
     {
         _battleLog.Add(message);
+        DebugLog.Trace("BattleLog", message);
         if (_battleLog.Count > 50)
         {
             _battleLog.RemoveAt(0);
