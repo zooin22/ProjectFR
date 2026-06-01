@@ -4,7 +4,7 @@
 
 ## Architecture
 
-- [ ] `InfiltrationTuning`에 `SuccessHeatReduction` 상수를 추가한다: `CampaignState.ApplyMissionResult()`의 `Heat = Math.Max(0, Heat - 1)` 하드코딩이 밸런스 수치는 Tuning 파일에만 두는 규칙을 위반한다 — `InfiltrationTuning`에 `public const int SuccessHeatReduction = 1`을 추가하고 `CampaignState.ApplyMissionResult()`에서 참조하도록 교체한다.
+- [x] `InfiltrationTuning`에 `SuccessHeatReduction` 상수를 추가한다: `CampaignState.ApplyMissionResult()`의 `Heat = Math.Max(0, Heat - 1)` 하드코딩이 밸런스 수치는 Tuning 파일에만 두는 규칙을 위반한다 — `InfiltrationTuning`에 `public const int SuccessHeatReduction = 1`을 추가하고 `CampaignState.ApplyMissionResult()`에서 참조하도록 교체한다.
 - [x] `BattleScene.cs` 상단 `TODO(battle-removal)` 주석에 나열된 의존성을 침투 레이어로 이관하고 `BattleManager` / `BattleScene` 내 legacy 경로를 제거한다: `ActionContext`의 플레이어·클립보드·적 목록을 `InfiltrationState` 기반으로 교체하고, `BattleManager.PlayerAction()` 호출을 `InfiltrationManager.StartOperation()` / `ExecuteImmediateAction()` 흐름으로 일원화한다.
 - [x] `CursorAgent.ActionPoints`를 실제 액션 게이트로 사용한다: 현재 `UpdateActionButtons()`와 `ExecuteImmediateAction()`은 `_battleManager.Player.CurrentAp`를 소비하지만 `CursorAgent.ActionPoints`는 표시만 되고 소비되지 않는다 — `ExecuteQueuedCommandEntry()` 진입 시 `CursorAgent.ActionPoints` 차감과 부족 시 스킵 처리를 추가한다.
 - [x] `ProcessCompletedOperations()`의 `else` 폴스루를 제거한다: 현재 처리되지 않은 `OperationType`(Stun 등)은 `ExecuteImmediateAction(operation.Type, node)`로 떨어져 `MapOperationTypeToActionId()`가 `null`을 반환하며 콘솔 오류를 낸다 — 명시적 case 분기를 추가하거나 `default: operation.MarkCompletionHandled()` 가드를 넣어 폴스루를 차단한다.

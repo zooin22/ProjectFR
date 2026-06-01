@@ -33,4 +33,6 @@ public static class InfiltrationTuning
     public const int OperatorMaxHp = 30;
 
     public const int BackupRepairTraceIncrease = 5;
+
+    public const int SuccessHeatReduction = 1;
 }

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Godot;
+using ProjectFR.Infiltration;
 
 namespace ProjectFR.Mission;
 
@@ -179,7 +180,7 @@ public static class CampaignState
         Heat = Math.Max(0, Heat + result.HeatDelta);
         if (result.Success)
         {
-            Heat = Math.Max(0, Heat - 1);
+            Heat = Math.Max(0, Heat - InfiltrationTuning.SuccessHeatReduction);
             _completedMissionIds.Add(result.Mission.Id);
         }
 
