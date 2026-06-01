@@ -52,7 +52,7 @@
 
 - [x] Temp Window에서 노드를 선택해 액션 덱에 연결한다: 현재 Temp Window는 바인드 경로의 노드를 `ItemList`로 보여주기만 하고(`UpdateTempWindowUi`), 항목 클릭 시 `_selectedNodePath`를 갱신하거나 컨텍스트 메뉴를 여는 상호작용이 없다 — `_tempWindowItemsLabel` 대신 `ItemList` 컨트롤을 사용하도록 바꾸거나 현재 `ItemList`에 `ItemSelected` 핸들러를 연결해 `_selectedNodePath`를 업데이트하고 `UpdateUi()`를 호출해 Temp Window를 읽기 전용 뷰에서 탐색 가능한 보조창으로 승격시킨다.
 - [x] 키보드 단축키를 추가한다: `Enter` → Execute Queue, `Delete` → Delete 큐 적재, `Backspace` → Navigate Up, `F5` → 현재 컨테이너 새로 고침; `BattleScene._Input()`에서 `_battleManager.IsBattleEnd`와 `GetSelectedNode()`를 체크한 뒤 해당 핸들러를 호출하고, `ShowConsoleHelp()`에 단축키 목록을 포함시킨다.
-- [ ] 남은 턴 3 이하 시 ConsoleFeed에 경보 메시지를 출력한다: `ExecuteQueuedCommands()`의 각 턴 틱 이후 `_effectiveTurnLimit - State.TurnCount <= 3`이면 `AppendConsoleFeed($"⚠ {remaining}턴 남음 :: 추적도 임계 접근")`을 호출한다. 현재 `_turnStateLabel` 색상 변경만으로는 마감이 박두했음을 인지하기 어렵다.
+- [x] 남은 턴 3 이하 시 ConsoleFeed에 경보 메시지를 출력한다: `ExecuteQueuedCommands()`의 각 턴 틱 이후 `_effectiveTurnLimit - State.TurnCount <= 3`이면 `AppendConsoleFeed($"⚠ {remaining}턴 남음 :: 추적도 임계 접근")`을 호출한다. 현재 `_turnStateLabel` 색상 변경만으로는 마감이 박두했음을 인지하기 어렵다.
 
 ## QA / Smoke Test
 

@@ -560,6 +560,9 @@ public partial class BattleScene : Control
             ApplyMissionFailureChecks();
             if (_infiltrationManager.State.RunStatus != RunStatus.Active)
                 break;
+            var remaining = _effectiveTurnLimit - _infiltrationManager.State.TurnCount;
+            if (remaining <= 3 && remaining >= 0)
+                AppendConsoleFeed($"⚠ {remaining}턴 남음 :: 추적도 임계 접근");
         }
 
         // Drain any in-flight deferred operations that need extra ticks to finish.
@@ -574,6 +577,12 @@ public partial class BattleScene : Control
             ApplyDetectionDamage();
             ProcessCompletedOperations();
             ApplyMissionFailureChecks();
+            if (_infiltrationManager.State.RunStatus == RunStatus.Active)
+            {
+                var drainRemaining = _effectiveTurnLimit - _infiltrationManager.State.TurnCount;
+                if (drainRemaining <= 3 && drainRemaining >= 0)
+                    AppendConsoleFeed($"⚠ {drainRemaining}턴 남음 :: 추적도 임계 접근");
+            }
         }
 
         _infiltrationManager.ClearQueue();
