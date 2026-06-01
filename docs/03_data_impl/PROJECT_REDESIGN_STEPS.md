@@ -2,6 +2,7 @@
 
 > Status: active — implementation progress log; Steps 1-7 partially implemented
 > Related: `README.md`, `GAME_CONCEPT.md`, `MULTI_WINDOW_EXPANSION.md`
+> System specs: 상세 시스템 명세는 `02_systems/`의 기획서가 캐논 (이 문서는 구현 진행 로그)
 
 
 ## Goal

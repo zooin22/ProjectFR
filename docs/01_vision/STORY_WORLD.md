@@ -1,7 +1,8 @@
 # ProjectFR - Story & Worldbuilding
 
 > Status: active — canonical story/world reference
-> Read with: `GAME_CONCEPT.md`, `MISSION_FACTIONS.md`
+> Read with: `GAME_CONCEPT.md`, `MISSION_FACTIONS.md`, `LOBBY_MISSION_DESIGN.md`
+> Last cleanup: 2026-06-01 — 문서 세트 통합 정리
 
 ## Subtitle Candidate: No Tail Signal
 

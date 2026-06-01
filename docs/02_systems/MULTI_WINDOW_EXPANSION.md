@@ -2,6 +2,7 @@
 
 > Status: feature design doc — Phase A (Clipboard Window) implemented; Phase B+ still planned
 > Parent roadmap: `PROJECT_REDESIGN_STEPS.md`
+> Read with: `UI_UX_DESIGN.md` (데스크톱 오버레이 표현), `EXPLORER_INTERACTION_DESIGN.md`
 
 
 ## Why this fits

@@ -1,7 +1,7 @@
 # ProjectFR - Mission Data Model
 
 > Status: active — code/design alignment reference; update as mission system evolves
-> Read with: `MISSION_FACTIONS.md`, `STORY_WORLD.md`
+> Read with: `MISSION_FACTIONS.md`, `STORY_WORLD.md`, `LOBBY_MISSION_DESIGN.md`
 > Related: `res/mission/`
 
 ## Current Code Shape

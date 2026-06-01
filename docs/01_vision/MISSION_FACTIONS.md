@@ -1,7 +1,7 @@
 # ProjectFR - Mission Factions
 
 > Status: active — design intent canonical; in-game wiring partial (see §Implementation Status)
-> Read with: `STORY_WORLD.md`, `GAME_CONCEPT.md`, `MISSION_DATA_MODEL.md`
+> Read with: `STORY_WORLD.md`, `GAME_CONCEPT.md`, `MISSION_DATA_MODEL.md`, `LOBBY_MISSION_DESIGN.md`
 > Related: `res/mission/`
 
 
