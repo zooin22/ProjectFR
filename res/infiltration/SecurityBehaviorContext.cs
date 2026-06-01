@@ -22,5 +22,4 @@ public sealed class SecurityBehaviorContext
     public required Action<string, int, string> MarkTrackedPath { get; init; }
     public required Action<string, int, string> ApplyForcedLock { get; init; }
     public required Action<string, int, string> ApplyScanPressure { get; init; }
-    public Action<string>? RestoreNode { get; init; }
 }

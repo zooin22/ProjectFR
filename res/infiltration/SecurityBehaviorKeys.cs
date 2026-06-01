@@ -25,6 +25,4 @@ public static class SecurityBehaviorKeys
     public const string FolderNavigationBackupRepairer = "security.folder_navigation.backup_repairer";
     public const string SearchSweepAntivirusHeavy = "security.search_sweep.antivirus_heavy";
     public const string SearchSweepBackupRepairer = "security.search_sweep.backup_repairer";
-
-    public const string RestoreNode = "security.restore_node";
 }

@@ -25,7 +25,6 @@ public static class SecurityBehaviorFactory
             SecurityBehaviorKeys.FolderNavigationBackupRepairer => BuildBackupRepairerFolderBehavior(),
             SecurityBehaviorKeys.SearchSweepAntivirusHeavy => BuildAntivirusSearchBehavior(),
             SecurityBehaviorKeys.SearchSweepBackupRepairer => BuildBackupRepairerSearchBehavior(),
-            SecurityBehaviorKeys.RestoreNode => BuildBackupRepairerRestoreBehavior(),
             _ => null
         };
     }
@@ -355,19 +354,6 @@ public static class SecurityBehaviorFactory
             new SecurityActionNode(context =>
             {
                 context.ApplyScanPressure(context.CurrentFolderPath, SecurityBehaviorTuning.BackupRepairerScanPressureDurationTurns, "Backup Repairer initiated integrity scan on current folder");
-                return SecurityBehaviorStatus.Success;
-            }));
-    }
-
-    private static SecurityBehaviorNode BuildBackupRepairerRestoreBehavior()
-    {
-        return new SecuritySequenceNode(
-            new SecurityConditionNode(context => context.RestoreNode != null),
-            new SecurityActionNode(context =>
-            {
-                context.RestoreNode!(context.PrimaryPath);
-                context.AddTrace(InfiltrationTuning.BackupRepairTraceIncrease, $"Backup Repairer restored node at {context.PrimaryPath}");
-                context.AddLog($"Backup Repairer restored cleared node: {context.PrimaryPath}");
                 return SecurityBehaviorStatus.Success;
             }));
     }
