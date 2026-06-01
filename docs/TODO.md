@@ -26,7 +26,7 @@
 - [x] 미션 보드에서 이미 완료한 미션을 시각적으로 구분한다: `MainMenu.RefreshMenu()`에서 `_completedMissionIds`를 참조해 미션 제목 옆에 "(완료)" 표시를 추가하거나 선택 비활성화해 재플레이 여부를 명확히 한다.
 - [x] `CampaignState.GetAvailableMissions()`가 빈 리스트를 반환할 때 발생하는 `IndexOutOfRangeException`을 방어한다: 선행 조건·세력 평판 필터 후 가용 미션이 0개면 전체 `_missionBoard`로 폴백해 최소 하나를 반환하도록 `EnsureInitialized()`와 `GetSelectedMission()`에 가드를 추가한다.
 - [x] 미션 종료 오버레이에 세력 평판 변화를 표시한다: `UpdateBattleEndOverlay`에서 `_battleEndStatsLabel`이 Credits/Rep/Heat 델타만 보여주고 어느 세력의 평판이 변했는지 알 수 없다 — `result.Mission.Client.Name`, `result.Mission.Client.Faction`, `CampaignState.GetFactionReputation(result.Mission.Client.FactionId)` 를 포함한 세력 평판 요약 행(`세력: X → Rep Y`)을 추가한다.
-- [ ] `CampaignState`를 JSON 파일로 직렬화해 런 간 진행 상황을 유지한다: 현재 Credits·Heat·Reputation·FactionReputation·CompletedMissionIds가 모두 인메모리이며 게임 재시작 시 초기화된다 — `ApplyMissionResult()` 호출 후 `OS.GetUserDataDir() + "/campaign.json"`에 저장하고 `EnsureInitialized()`에서 파일이 있으면 복원하도록 구현한다; `Reset()`은 파일을 삭제해 뉴게임을 지원한다.
+- [x] `CampaignState`를 JSON 파일로 직렬화해 런 간 진행 상황을 유지한다: 현재 Credits·Heat·Reputation·FactionReputation·CompletedMissionIds가 모두 인메모리이며 게임 재시작 시 초기화된다 — `ApplyMissionResult()` 호출 후 `OS.GetUserDataDir() + "/campaign.json"`에 저장하고 `EnsureInitialized()`에서 파일이 있으면 복원하도록 구현한다; `Reset()`은 파일을 삭제해 뉴게임을 지원한다.
 
 ## Security / Detection
 
