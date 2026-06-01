@@ -1,5 +1,6 @@
 using ProjectFR.Data;
 using ProjectFR.Data.Nodes;
+using ProjectFR.Infiltration;
 using ProjectFR.Mission;
 
 namespace ProjectFR.Battle;
@@ -230,6 +231,20 @@ public static class BattleFactory
             case "mission_escape_only":
                 ReduceAllNodeProfiles(dungeon.Root, hpReduction: 2);
                 break;
+        }
+
+        MarkObjectiveNode(dungeon.Root, mission.TargetPath);
+    }
+
+    private static void MarkObjectiveNode(ContainerNode root, string targetPath)
+    {
+        foreach (var node in EnumerateAll(root))
+        {
+            if (string.Equals(node.Path, targetPath, StringComparison.OrdinalIgnoreCase))
+            {
+                node.Role = ExplorerNodeRole.Objective;
+                return;
+            }
         }
     }
 

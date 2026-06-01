@@ -1661,6 +1661,11 @@ public partial class BattleScene : Control
                 primaryLine += " " + string.Join(" ", agents.Select(a => GetAgentTypeBadge(a.AgentType)));
             }
 
+            if (node.Role == ExplorerNodeRole.Objective)
+            {
+                primaryLine += " [TGT]";
+            }
+
             if (isCursorHere)
             {
                 primaryLine = $"> {primaryLine}";

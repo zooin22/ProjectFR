@@ -1,3 +1,5 @@
+using ProjectFR.Infiltration;
+
 namespace ProjectFR.Data.Nodes;
 
 public enum NodeThreatLevel
@@ -50,6 +52,7 @@ public abstract class NodeData
     public bool IsFolder { get; protected set; }
     public long Size { get; set; }
     public NodeCombatProfile CombatProfile { get; set; }
+    public ExplorerNodeRole? Role { get; set; }
 
     protected NodeData(string name, string path, bool isFolder, long size = 0, NodeCombatProfile? combatProfile = null)
     {
