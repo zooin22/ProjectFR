@@ -4,6 +4,7 @@
 
 ## Architecture
 
+- [ ] `InfiltrationTuning`에 `SuccessHeatReduction` 상수를 추가한다: `CampaignState.ApplyMissionResult()`의 `Heat = Math.Max(0, Heat - 1)` 하드코딩이 밸런스 수치는 Tuning 파일에만 두는 규칙을 위반한다 — `InfiltrationTuning`에 `public const int SuccessHeatReduction = 1`을 추가하고 `CampaignState.ApplyMissionResult()`에서 참조하도록 교체한다.
 - [x] `BattleScene.cs` 상단 `TODO(battle-removal)` 주석에 나열된 의존성을 침투 레이어로 이관하고 `BattleManager` / `BattleScene` 내 legacy 경로를 제거한다: `ActionContext`의 플레이어·클립보드·적 목록을 `InfiltrationState` 기반으로 교체하고, `BattleManager.PlayerAction()` 호출을 `InfiltrationManager.StartOperation()` / `ExecuteImmediateAction()` 흐름으로 일원화한다.
 - [x] `CursorAgent.ActionPoints`를 실제 액션 게이트로 사용한다: 현재 `UpdateActionButtons()`와 `ExecuteImmediateAction()`은 `_battleManager.Player.CurrentAp`를 소비하지만 `CursorAgent.ActionPoints`는 표시만 되고 소비되지 않는다 — `ExecuteQueuedCommandEntry()` 진입 시 `CursorAgent.ActionPoints` 차감과 부족 시 스킵 처리를 추가한다.
 - [x] `ProcessCompletedOperations()`의 `else` 폴스루를 제거한다: 현재 처리되지 않은 `OperationType`(Stun 등)은 `ExecuteImmediateAction(operation.Type, node)`로 떨어져 `MapOperationTypeToActionId()`가 `null`을 반환하며 콘솔 오류를 낸다 — 명시적 case 분기를 추가하거나 `default: operation.MarkCompletionHandled()` 가드를 넣어 폴스루를 차단한다.
@@ -22,6 +23,7 @@
 
 ## Campaign / Run Loop
 
+- [ ] `CampaignState.TryLoadFromFile()`에 JSON 파싱 실패 시 `.bak` 보전 복구 경로를 추가한다: 현재 `JsonSerializer.Deserialize` 예외 발생 시 `GD.PushWarning`만 출력하고 손상 파일을 그대로 두어 다음 `SaveToFile()` 호출 시 덮어쓸 위험이 있다 — 예외 발생 시 `SaveFilePath`의 내용을 `SaveFilePath + ".bak"`으로 복사한 뒤 빈 상태로 초기화하고, 경고 메시지에 `.bak` 경로를 포함시킨다.
 - [x] `CampaignState.IsMissionAvailable()`에 conflict-group 뮤텍스를 적용한다: `"readme_conflict"` 그룹의 두 미션("Loose End Cleanup", "Mirror Snatch") 중 하나가 `_completedMissionIds`에 있으면 같은 `ConflictGroup`의 나머지 미션을 잠금 처리한다.
 - [x] 미션 보드에서 이미 완료한 미션을 시각적으로 구분한다: `MainMenu.RefreshMenu()`에서 `_completedMissionIds`를 참조해 미션 제목 옆에 "(완료)" 표시를 추가하거나 선택 비활성화해 재플레이 여부를 명확히 한다.
 - [x] `CampaignState.GetAvailableMissions()`가 빈 리스트를 반환할 때 발생하는 `IndexOutOfRangeException`을 방어한다: 선행 조건·세력 평판 필터 후 가용 미션이 0개면 전체 `_missionBoard`로 폴백해 최소 하나를 반환하도록 `EnsureInitialized()`와 `GetSelectedMission()`에 가드를 추가한다.
@@ -30,12 +32,14 @@
 
 ## Security / Detection
 
+- [ ] `AiMonitor` 볼주머니 부분 탐지 로직을 구현한다: 위키에서 "`AiMonitor`가 볼주머니 은닉 파일도 일부 감지"라고 명시하지만 `InfiltrationManager.GetMonitoringAgents()`는 `AiMonitor`를 `IndexerScout`와 동일하게 처리해 볼주머니 마스킹이 온전하면 완전 제외한다 — `InfiltrationTuning`에 `PouchSizeAiMonitorDetectionThreshold = 5` 상수를 추가하고, `GetMonitoringAgents()` 필터에서 `AiMonitor`는 파일 크기가 임계값 미만일 때만 제외하도록 `IndexerScout` 분기와 분리한다.
 - [x] `CursorAgent.IsDetected` 해제 수단을 추가한다: 현재 탐지 플래그는 런 내 단방향으로 세팅만 되고 지울 수 없다 — `RewriteLog` 완료 또는 `CleanAction` 성공 시 `InfiltrationManager`에서 `CursorAgent.IsDetected = false`로 리셋하고, 가능 조건을 `InfiltrationTuning`에 상수로 정의한다.
 - [x] Quarantine / Purge 경보 단계에서 보안 에이전트가 커서 방향으로 수렴하도록 `AdvanceSecurityAgents()`를 개선한다: 현재 경보 단계는 추적도 임계값 표시에만 쓰이고 에이전트 이동 로직은 `IsAlerted + 활성 오퍼레이션` 조합에만 반응한다 — `AlertStage >= Quarantine`일 때 에이전트가 `CursorAgent.CurrentNodePath` 방향으로 한 칸씩 이동하는 수렴 패턴을 추가한다.
 - [x] 오퍼레이터 HP 감소를 침투 실패 경로로 연결한다: `_battleManager.Player.CurrentHp`가 UI에 표시되지만 어떤 보안 에이전트도 침투 중 HP 피해를 주지 않아 HP 소진 실패 경로가 없다 — GuardScanner 또는 AntivirusHeavy가 탐지(`IsDetected == true`) 상태에서 커서 노드와 같은 위치에 있을 때 `AdvanceSecurityAgents()` 안에서 `_battleManager.Player.TakeDamage()` 호출을 추가하고, `ApplyMissionFailureChecks()`에서 `_battleManager.Player.IsAlive == false` 조건으로 미션을 실패 처리한다.
 
 ## Content
 
+- [ ] `ExplorerNodeRole`을 `NodeData`에 연결하고 ExplorerField에 목표 뱃지를 표시한다: `res/infiltration/ExplorerNodeRole.cs`의 `Objective, Resource, Exit` 등 역할 enum이 정의됐지만 codebase 어디서도 참조되지 않는다 — `NodeData`에 `ExplorerNodeRole? Role` 속성을 추가하고, `BattleFactory.ApplyMissionVariants()`에서 `MissionData.TargetPath`와 일치하는 노드에 `ExplorerNodeRole.Objective`를 설정한다; `BattleScene.UpdateExplorerFieldItem()`에서 `Role == Objective`인 카드에 `[TGT]` 텍스트 뱃지를 오버레이해 플레이어가 목표 노드를 한눈에 파악할 수 있게 한다.
 - [x] `SeedSecurityAgents()`를 `MissionData.TargetPath`에 연동한다: 현재 모든 미션이 동일한 하드코딩 순찰 경로를 사용한다 — 미션 목표 경로(예: `SystemLogPath`, `RootReadmePath`)를 포함하는 순찰 구간을 적어도 하나의 에이전트에 할당해 목표 경로마다 경비 밀도가 다르게 느껴지도록 변경한다.
 - [x] `BackupRepairer`에 노드 복원 메커니즘을 추가한다: 현재 ScanPressure만 적용하며 이름과 역할이 어긋난다 — `OperationType.Restore`를 추가하고, `BackupRepairer`가 순찰 경로 안에서 클리어된 노드를 감지하면 `_dungeon`의 해당 노드를 복구하는 `SecurityBehaviorKeys.RestoreNode` 행동을 `SecurityBehaviorFactory`에 구현한다; 복구 시 해당 경로에 `AddTrace(InfiltrationTuning.BackupRepairTraceIncrease)`를 추가해 플레이어에게 신호를 준다.
 - [x] `AiMonitor`를 `SeedSecurityAgents()`에 추가한다: `SecurityAgentType.AiMonitor`는 행동(`CursorCrossedAiMonitor`, `FolderNavigationAiMonitor`, `SearchSweepAiMonitor`), 아이콘(`ai_monitor.svg`), 배지(`[AI]`)가 모두 구현됐지만 `BattleScene.SeedSecurityAgents()`에서 한 번도 인스턴스화되지 않는다 — `BossZipPath` 또는 `CacheTempPath` 기준 순찰 루트로 에이전트를 추가한다.
@@ -50,10 +54,12 @@
 
 ## UX
 
+- [ ] 볼주머니 노출(`ExposedPouchPaths`)을 클립보드 창에 시각적으로 표시한다: `UpdateClipboardWindowUi()`의 포치 캐시 순회(BattleScene.cs 약 1983줄)에서 `_infiltrationManager.State.ExposedPouchPaths.Contains(item.NodePath)`이면 해당 항목 뒤에 `[color=red][EXPOSED][/color]` 레이블을 추가해 `ShowHidden`/`PermissionOverride` 반응으로 볼주머니가 노출됐음을 플레이어가 클립보드 창에서 즉시 인지하게 한다.
 - [x] Temp Window에서 노드를 선택해 액션 덱에 연결한다: 현재 Temp Window는 바인드 경로의 노드를 `ItemList`로 보여주기만 하고(`UpdateTempWindowUi`), 항목 클릭 시 `_selectedNodePath`를 갱신하거나 컨텍스트 메뉴를 여는 상호작용이 없다 — `_tempWindowItemsLabel` 대신 `ItemList` 컨트롤을 사용하도록 바꾸거나 현재 `ItemList`에 `ItemSelected` 핸들러를 연결해 `_selectedNodePath`를 업데이트하고 `UpdateUi()`를 호출해 Temp Window를 읽기 전용 뷰에서 탐색 가능한 보조창으로 승격시킨다.
 - [x] 키보드 단축키를 추가한다: `Enter` → Execute Queue, `Delete` → Delete 큐 적재, `Backspace` → Navigate Up, `F5` → 현재 컨테이너 새로 고침; `BattleScene._Input()`에서 `_battleManager.IsBattleEnd`와 `GetSelectedNode()`를 체크한 뒤 해당 핸들러를 호출하고, `ShowConsoleHelp()`에 단축키 목록을 포함시킨다.
 - [x] 남은 턴 3 이하 시 ConsoleFeed에 경보 메시지를 출력한다: `ExecuteQueuedCommands()`의 각 턴 틱 이후 `_effectiveTurnLimit - State.TurnCount <= 3`이면 `AppendConsoleFeed($"⚠ {remaining}턴 남음 :: 추적도 임계 접근")`을 호출한다. 현재 `_turnStateLabel` 색상 변경만으로는 마감이 박두했음을 인지하기 어렵다.
 
 ## QA / Smoke Test
 
+- [ ] `RunSmokeTestIfRequested()`를 Delete/Scan 미션 골든 패스로 확장한다: 현재 `mission_extract_boss` (Extract 타입)만 검증하며 Delete/Scan 타입 미션은 커버되지 않는다 — `mission_delete_readme` 실행 시 `RootReadmePath`에 Delete 큐 → 실행 → `_missionProgress.ObjectiveCompleted == true` 로그를, `mission_scan_cache` 실행 시 `RootBuildCachePath`에 Inspect 큐 → 실행 → 완료 여부를 각각 `DebugLog.Info`로 출력한다.
 - [x] `RunSmokeTestIfRequested()`를 전체 미션 골든 패스로 확장한다: 현재 Inspect + Open 두 번만 수행하며 Copy·Extract 흐름은 검증되지 않는다 — Extract 타입 미션(`mission_extract_boss`)에 대해 대상 노드 Copy 큐 → 실행 → 루트 이동 → Extract 순서를 자동화해 `_missionResult.Success == true`를 assertions 없이 로그로 확인할 수 있게 한다.
