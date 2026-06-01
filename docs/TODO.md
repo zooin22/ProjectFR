@@ -46,7 +46,7 @@
 
 - [x] Cut/Paste 액션을 컨텍스트 메뉴와 큐 흐름에 연결한다: `CutAction`·`PasteAction`이 `ActionRegistry`에 등록되어 있지만 `BuildContextActionIds()`에 `ActionIds.Cut`과 `ActionIds.Paste`가 빠져 있어 플레이어가 접근할 수 없다 — 컨텍스트 메뉴 후보에 추가하고, `ProcessCompletedOperations()`에 `OperationType.Cut`·`OperationType.Paste` case를 추가해 `InfiltrationState.Clipboard`(레거시 `ClipboardSystem` 아님)와 동기화한다.
 - [x] `StunAction`을 구현하고 등록한다: `OperationType.Stun`이 `CreateOperationFromQueueEntry()`에 매핑되어 있고 `SecurityAgent.DisabledTurns`가 `AdvanceSecurityAgents()`에서 소비되지만, `StunAction` 클래스가 존재하지 않아 큐에 넣을 수 없다 — `res/action/implementations/StunAction.cs`를 작성(AP 비용 2, 대상 노드의 보안 에이전트에 `DisabledTurns = InfiltrationTuning.StunDurationTurns` 설정)하고 `ActionRegistry.RegisterDefaultActions()`에 등록한다.
-- [ ] `ActionIds.Stun`을 컨텍스트 메뉴 후보에 추가한다: `StunAction`은 `ActionRegistry`에 등록되어 있고 덱 버튼으로는 접근 가능하지만 `BuildContextActionIds()`에 포함되지 않아 우클릭 메뉴에는 나타나지 않는다 — `candidates` 목록에 `ActionIds.Stun`을 추가하고, 컨텍스트 제목을 `GetContextActionTitle`에서 `"Stun Agent"`로 매핑한다.
+- [x] `ActionIds.Stun`을 컨텍스트 메뉴 후보에 추가한다: `StunAction`은 `ActionRegistry`에 등록되어 있고 덱 버튼으로는 접근 가능하지만 `BuildContextActionIds()`에 포함되지 않아 우클릭 메뉴에는 나타나지 않는다 — `candidates` 목록에 `ActionIds.Stun`을 추가하고, 컨텍스트 제목을 `GetContextActionTitle`에서 `"Stun Agent"`로 매핑한다.
 
 ## UX
 

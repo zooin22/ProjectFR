@@ -1417,6 +1417,7 @@ public partial class BattleScene : Control
             ActionIds.Paste,
             ActionIds.Compress,
             ActionIds.LogForge,
+            ActionIds.Stun,
             ActionIds.Delete
         });
 
@@ -1462,6 +1463,7 @@ public partial class BattleScene : Control
             ActionIds.Delete => "Delete",
             ActionIds.Compress => "Compress",
             ActionIds.LogForge => "Rewrite Log",
+            ActionIds.Stun => "Stun Agent",
             _ => actionId.ToUpperInvariant()
         };
     }
