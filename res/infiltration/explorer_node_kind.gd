@@ -1,0 +1,15 @@
+class_name ExplorerNodeKind
+
+enum {
+	FOLDER,
+	FILE,
+	LOG,
+	TEMP,
+	ARCHIVE,
+	ENCRYPTED,
+	EXECUTABLE,
+	SHORTCUT,
+	EXIT,
+	DECOY,
+	SYSTEM,
+}

@@ -1,0 +1,12 @@
+class_name ExplorerNodeRole
+
+enum {
+	OBJECTIVE,
+	RESOURCE,
+	HAZARD,
+	EVIDENCE,
+	UTILITY,
+	DECOY,
+	EXIT,
+	SECURITY_ANCHOR,
+}
