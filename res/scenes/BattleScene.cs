@@ -2010,7 +2010,8 @@ public partial class BattleScene : Control
         {
             var resolvedSize = item.Size > 0 ? item.Size : (_dungeon.GetNode(item.NodePath)?.Size ?? 0);
             var ghostTag = item.IsGhosted ? " 쨌 ghost" : string.Empty;
-            _clipboardWindowItemsLabel.AppendText($"[color=#c9d1d9]- {item.NodeKind} :: {item.NodePath} 쨌 size {resolvedSize}{ghostTag}[/color]\n");
+            var exposedTag = _infiltrationManager.State.ExposedPouchPaths.Contains(item.NodePath) ? " [color=red][EXPOSED][/color]" : string.Empty;
+            _clipboardWindowItemsLabel.AppendText($"[color=#c9d1d9]- {item.NodeKind} :: {item.NodePath} 쨌 size {resolvedSize}{ghostTag}[/color]{exposedTag}\n");
         }
     }
 
