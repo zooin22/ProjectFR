@@ -1,5 +1,5 @@
 ---
-description: "ProjectFR docs/TODO.md의 첫 번째 unchecked 항목을 정확히 하나 처리한다. 남은 항목이 없으면 wiki를 갱신한다."
+description: "ProjectFR docs/TODO.md의 첫 번째 unchecked 항목을 정확히 하나 처리하고, 성공 시 자동 커밋/푸시한다. 남은 항목이 없으면 wiki를 갱신한다."
 ---
 
 # ProjectFR TODO 실행
@@ -24,14 +24,18 @@ TODO 파일은 항상 다음 경로다:
 - 사용자가 다른 경로에서 Claude를 실행했더라도 반드시 위 ProjectFR 경로에서 작업한다.
 - 다른 사람/에이전트의 기존 변경을 되돌리지 않는다. 수정 전후로 변경 범위를 확인한다.
 - `/wiki` 같은 다른 slash command를 문자 그대로 호출하지 않는다. 필요하면 아래에 적힌 wiki 갱신 절차를 직접 수행한다.
+- TODO 처리 또는 wiki 갱신이 성공했고 git 변경사항이 있으면 **반드시 자동으로 commit 후 push**한다.
+- 검증 실패, 구현 중단, 불확실한 상태에서는 commit/push 하지 않는다.
 
 ## Step 1 — 현재 상태 확인
 
-1. `/mnt/e/Agent/workspaces/Godot/projects/ProjectFR/docs/TODO.md`를 읽는다.
-2. 파일이 없으면 다음만 보고하고 중단한다:
+1. `/mnt/e/Agent/workspaces/Godot/projects/ProjectFR`로 이동한다.
+2. `git status --short`로 시작 전 변경사항을 확인한다.
+3. `/mnt/e/Agent/workspaces/Godot/projects/ProjectFR/docs/TODO.md`를 읽는다.
+4. 파일이 없으면 다음만 보고하고 중단한다:
    - `docs/TODO.md 파일이 없습니다. /op <요청>으로 먼저 항목을 추가해주세요.`
-3. 첫 번째 `- [ ]` 항목을 찾는다.
-4. `- [ ]` 항목이 없으면 Step 5의 wiki 갱신으로 이동한다.
+5. 첫 번째 `- [ ]` 항목을 찾는다.
+6. `- [ ]` 항목이 없으면 Step 5의 wiki 갱신으로 이동한다.
 
 ## Step 2 — 첫 번째 TODO 하나 구현
 
@@ -43,10 +47,12 @@ TODO 파일은 항상 다음 경로다:
 2. 관련 소스 파일을 읽고 필요한 최소 변경을 구현한다.
 3. 코드 변경은 ProjectFR 내부 파일로 제한한다.
 4. 가능한 가장 싼 검증을 실행한다. 기본 검증은 다음 중 가능한 것:
-   - `dotnet build ProjectFR.csproj`
+   - Windows SDK가 필요하면 `"/mnt/c/Program Files/dotnet/dotnet.exe" build ProjectFR.csproj`
+   - 그 외에는 `dotnet build ProjectFR.csproj`
    - 또는 환경 문제로 build가 불가능하면 수정 파일의 정적 검토와 실패 이유 보고
 5. 구현과 검증이 끝난 뒤에만 `docs/TODO.md`의 해당 항목을 `- [x]`로 변경한다.
 6. `docs/TODO.md` 상단의 `> Updated:` 날짜가 있으면 오늘 날짜로 갱신한다.
+7. Step 6의 자동 commit/push를 수행한다.
 
 ## Step 3 — 완료 보고
 
@@ -56,6 +62,8 @@ TODO 파일은 항상 다음 경로다:
 처리한 TODO: <첫 번째 항목 요약>
 변경 파일: <파일 목록>
 검증: <명령 및 결과>
+커밋: <commit hash 또는 skipped>
+푸시: <origin/branch 결과 또는 skipped>
 남은 TODO: <개수>
 ```
 
@@ -67,6 +75,7 @@ TODO 파일은 항상 다음 경로다:
 - build/검증 실패가 수정 때문인지 판단 불가
 - 항목 범위가 너무 커서 한 번에 안전하게 처리 불가
 - 필요한 파일/경로가 없음
+- git 상태가 충돌/merge/rebase 중이거나, 안전하게 commit/push할 수 없음
 
 중단 시에는 이유와 다음에 필요한 조치를 보고한다.
 
@@ -91,4 +100,45 @@ TODO 파일은 항상 다음 경로다:
    - `docs/wiki/content-pipeline.md`
    - `docs/wiki/dev-guide.md`
    - `docs/wiki/changelog-from-todo.md`
-4. 갱신한 파일 목록을 보고한다.
+4. wiki 갱신 후 변경사항이 있으면 Step 6의 자동 commit/push를 수행한다.
+5. 갱신한 파일 목록과 commit/push 결과를 보고한다.
+
+## Step 6 — 자동 commit/push
+
+TODO 처리 또는 wiki 갱신이 성공적으로 끝났을 때만 실행한다.
+
+1. 변경사항 확인:
+
+```bash
+git status --short
+```
+
+2. 변경사항이 없으면 commit/push를 건너뛰고 `커밋: skipped (no changes)`로 보고한다.
+
+3. 변경사항이 있으면 전체 변경을 스테이징한다:
+
+```bash
+git add -A
+```
+
+4. 커밋 메시지는 처리한 TODO에 맞춰 conventional commit 형식으로 작성한다. 예:
+
+```bash
+git commit -m "fix: handle operator hp in infiltration state"
+```
+
+권장 prefix:
+- 기능/시스템 추가: `feat:`
+- 버그 수정: `fix:`
+- 리팩터링: `refactor:`
+- 문서/wiki만 갱신: `docs:`
+- 자동화/설정: `chore:`
+
+5. 현재 브랜치를 확인하고 origin으로 push한다:
+
+```bash
+BRANCH="$(git branch --show-current)"
+git push origin "$BRANCH"
+```
+
+6. push 실패 시 재시도는 한 번만 한다. 그래도 실패하면 commit hash와 push 오류를 보고한다.
