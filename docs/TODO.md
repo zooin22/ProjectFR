@@ -40,7 +40,7 @@
 - [x] `BackupRepairer`에 노드 복원 메커니즘을 추가한다: 현재 ScanPressure만 적용하며 이름과 역할이 어긋난다 — `OperationType.Restore`를 추가하고, `BackupRepairer`가 순찰 경로 안에서 클리어된 노드를 감지하면 `_dungeon`의 해당 노드를 복구하는 `SecurityBehaviorKeys.RestoreNode` 행동을 `SecurityBehaviorFactory`에 구현한다; 복구 시 해당 경로에 `AddTrace(InfiltrationTuning.BackupRepairTraceIncrease)`를 추가해 플레이어에게 신호를 준다.
 - [x] `AiMonitor`를 `SeedSecurityAgents()`에 추가한다: `SecurityAgentType.AiMonitor`는 행동(`CursorCrossedAiMonitor`, `FolderNavigationAiMonitor`, `SearchSweepAiMonitor`), 아이콘(`ai_monitor.svg`), 배지(`[AI]`)가 모두 구현됐지만 `BattleScene.SeedSecurityAgents()`에서 한 번도 인스턴스화되지 않는다 — `BossZipPath` 또는 `CacheTempPath` 기준 순찰 루트로 에이전트를 추가한다.
 - [x] `BattleFactory`에 미션 유형별 던전 레이아웃을 추가한다: 현재 7개 미션이 모두 동일한 `CreateDefaultDungeon` 구조를 사용한다 — Delete/Modify 미션용으로 BuildCache 뎁스를 줄이고 목표 경로 인접에 Firewall Sentinel을 배치한 `CreateCompactDungeon`을, Scan/Escape 미션용으로 하위 폴더 2개를 추가한 `CreateDeepDungeon`을 구현하고, `CreateDefaultDungeon(MissionData mission)` 내부 `switch(mission.ObjectiveType)`로 라우팅한다.
-- [ ] Helix Ops 세력 연계 미션 `mission_extract_logs`를 `MissionBoardFactory`에 추가한다: "mission_scan_cache" 완료 시 해금되는 Extract 의뢰(`TargetPath: BattleConstants.SystemLogPath`, `PrerequisiteMissionId: "mission_scan_cache"`, `TurnLimit: 9`, `RequiredFactionReputation: 1`)를 추가해 세력 평판 진행이 보드에 반영되게 한다.
+- [x] Helix Ops 세력 연계 미션 `mission_extract_logs`를 `MissionBoardFactory`에 추가한다: "mission_scan_cache" 완료 시 해금되는 Extract 의뢰(`TargetPath: BattleConstants.SystemLogPath`, `PrerequisiteMissionId: "mission_scan_cache"`, `TurnLimit: 9`, `RequiredFactionReputation: 1`)를 추가해 세력 평판 진행이 보드에 반영되게 한다.
 
 ## Actions
 
