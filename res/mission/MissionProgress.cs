@@ -1,4 +1,5 @@
 using ProjectFR.Action;
+using ProjectFR.Infiltration;
 
 namespace ProjectFR.Mission;
 
@@ -51,12 +52,15 @@ public class MissionProgress
         return turnCount >= turnLimit;
     }
 
-    public MissionResult Resolve(bool playerSurvived, bool extracted, int turnsUsed, int turnLimit)
+    public MissionResult Resolve(bool playerSurvived, bool extracted, int turnsUsed, int turnLimit, int trace = 0)
     {
         bool success = playerSurvived && extracted && _objectiveCompleted && !HasExceededTurnLimit(turnsUsed, turnLimit);
         string summary = success
             ? $"{Mission.Title} complete. Client package delivered cleanly."
             : BuildFailureSummary(playerSurvived, extracted, turnsUsed, turnLimit);
+
+        int traceHeat = trace / InfiltrationTuning.TracePerHeatPoint;
+        int heatDelta = success ? traceHeat : Mission.FailureHeat + traceHeat;
 
         return new MissionResult(
             mission: Mission,
@@ -64,7 +68,7 @@ public class MissionProgress
             summary: summary,
             creditsDelta: success ? Mission.RewardCredits : -Mission.FailurePenaltyCredits,
             reputationDelta: success ? Mission.RewardReputation : -1,
-            heatDelta: success ? 0 : Mission.FailureHeat,
+            heatDelta: heatDelta,
             objectiveCompleted: _objectiveCompleted,
             playerSurvived: playerSurvived,
             dungeonCleared: extracted,

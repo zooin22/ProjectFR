@@ -35,4 +35,7 @@ public static class ActionConstants
     public const int SearchActionApCost = 1;
     public const int ShowHiddenActionApCost = 1;
     public const int PermissionOverrideActionApCost = 2;
+
+    public const int StunActionApCost = 2;
+    public const int StunDamage = 2;
 }

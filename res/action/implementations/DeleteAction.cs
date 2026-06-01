@@ -21,9 +21,6 @@ public class DeleteAction : ActionBase
 
     public override ActionResult Execute(ActionContext context)
     {
-        if (context.Actor == null)
-            return new ActionResult(false, "No valid actor");
-
         if (context.Target == null)
             return new ActionResult(false, "No valid target");
 
@@ -31,7 +28,7 @@ public class DeleteAction : ActionBase
             return new ActionResult(false, "Delete prerequisites not met");
 
         int damage = ActionConstants.DeleteDamage;
-        context.Actor.ConsumeAp(ApCost);
+        context.ConsumeAp(ApCost);
         context.Target.TakeDamage(damage);
         return new ActionResult(true, $"Deleted {context.TargetNode?.Name ?? "unknown"} dealing {damage} damage", damage);
     }

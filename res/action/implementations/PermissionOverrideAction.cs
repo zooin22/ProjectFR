@@ -24,7 +24,7 @@ public class PermissionOverrideAction : ActionBase
         if (!CanExecute(context))
             return new ActionResult(false, "Cannot override permissions");
 
-        context.Actor.ConsumeAp(ApCost);
+        context.ConsumeAp(ApCost);
         return new ActionResult(true, $"Permission override challenged {context.TargetNode?.Name}");
     }
 }

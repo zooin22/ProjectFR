@@ -26,6 +26,7 @@ public class ActionRegistry
         Register(new SearchAction());
         Register(new ShowHiddenAction());
         Register(new PermissionOverrideAction());
+        Register(new StunAction());
     }
 
     public void Register(IAction action)

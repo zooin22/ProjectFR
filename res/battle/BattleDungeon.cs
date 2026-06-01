@@ -82,6 +82,20 @@ public class BattleDungeon
         }
     }
 
+    public bool RestoreNode(string path)
+    {
+        if (!_clearedPaths.Contains(path))
+            return false;
+
+        if (_nodeIndex.GetValueOrDefault(path) is not NodeData node)
+            return false;
+
+        _clearedPaths.Remove(path);
+        var parent = GetParentContainer(path);
+        parent?.AddChild(node);
+        return true;
+    }
+
     public bool MoveNode(string nodePath, string targetContainerPath)
     {
         if (_nodeIndex.GetValueOrDefault(nodePath) is not NodeData node)

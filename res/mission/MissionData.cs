@@ -14,6 +14,8 @@ public class MissionData
     public int FailurePenaltyCredits { get; }
     public int FailureHeat { get; }
     public string? PrerequisiteMissionId { get; }
+    public string? ConflictGroup { get; }
+    public int? RequiredFactionReputation { get; }
 
     public MissionData(
         string id,
@@ -27,7 +29,9 @@ public class MissionData
         int rewardReputation,
         int failurePenaltyCredits,
         int failureHeat,
-        string? prerequisiteMissionId = null)
+        string? prerequisiteMissionId = null,
+        string? conflictGroup = null,
+        int? requiredFactionReputation = null)
     {
         Id = id;
         Title = title;
@@ -41,5 +45,7 @@ public class MissionData
         FailurePenaltyCredits = failurePenaltyCredits;
         FailureHeat = failureHeat;
         PrerequisiteMissionId = prerequisiteMissionId;
+        ConflictGroup = conflictGroup;
+        RequiredFactionReputation = requiredFactionReputation;
     }
 }

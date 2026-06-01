@@ -22,6 +22,9 @@ public static class BattleConstants
     public const string BossZipName = "Boss.zip";
     public const string BossZipPath = "res://BuildCache/Assets/Boss.zip";
     public const long BossZipSize = 16;
+    public const string SystemLogName = "system.log";
+    public const string SystemLogPath = "res://BuildCache/system.log";
+    public const long SystemLogSize = 6;
 
     public const int DefaultFileMaxHp = 7;
     public const int DefaultFileMaxAp = 2;

@@ -18,4 +18,13 @@ public static class SecurityBehaviorKeys
 
     public const string SearchSweepIndexerScout = "security.search_sweep.indexer_scout";
     public const string SearchSweepAiMonitor = "security.search_sweep.ai_monitor";
+
+    public const string CursorCrossedAntivirusHeavy = "security.cursor_crossed.antivirus_heavy";
+    public const string CursorCrossedBackupRepairer = "security.cursor_crossed.backup_repairer";
+    public const string FolderNavigationAntivirusHeavy = "security.folder_navigation.antivirus_heavy";
+    public const string FolderNavigationBackupRepairer = "security.folder_navigation.backup_repairer";
+    public const string SearchSweepAntivirusHeavy = "security.search_sweep.antivirus_heavy";
+    public const string SearchSweepBackupRepairer = "security.search_sweep.backup_repairer";
+
+    public const string RestoreNode = "security.restore_node";
 }

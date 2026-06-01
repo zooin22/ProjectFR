@@ -19,6 +19,13 @@ public static class SecurityBehaviorFactory
             SecurityBehaviorKeys.FolderNavigationFirewallSentinel => BuildFirewallFolderBehavior(),
             SecurityBehaviorKeys.SearchSweepIndexerScout => BuildIndexerSearchBehavior(),
             SecurityBehaviorKeys.SearchSweepAiMonitor => BuildAiMonitorSearchBehavior(),
+            SecurityBehaviorKeys.CursorCrossedAntivirusHeavy => BuildAntivirusCursorBehavior(),
+            SecurityBehaviorKeys.CursorCrossedBackupRepairer => BuildBackupRepairerCursorBehavior(),
+            SecurityBehaviorKeys.FolderNavigationAntivirusHeavy => BuildAntivirusFolderBehavior(),
+            SecurityBehaviorKeys.FolderNavigationBackupRepairer => BuildBackupRepairerFolderBehavior(),
+            SecurityBehaviorKeys.SearchSweepAntivirusHeavy => BuildAntivirusSearchBehavior(),
+            SecurityBehaviorKeys.SearchSweepBackupRepairer => BuildBackupRepairerSearchBehavior(),
+            SecurityBehaviorKeys.RestoreNode => BuildBackupRepairerRestoreBehavior(),
             _ => null
         };
     }
@@ -210,6 +217,157 @@ public static class SecurityBehaviorFactory
                     context.MarkTrackedPath(context.PrimaryPath, SecurityBehaviorTuning.TraceMarkerDurationTurns, "Indexer Scout traced the search residue");
                 }
 
+                return SecurityBehaviorStatus.Success;
+            }));
+    }
+
+    private static SecurityBehaviorNode BuildAntivirusCursorBehavior()
+    {
+        return new SecuritySequenceNode(
+            new SecurityConditionNode(context => context.Agent != null),
+            new SecurityActionNode(context => AlertSingleAgent(
+                context,
+                context.IsObjectiveRoute ? SecurityAwarenessStage.Purge : SecurityAwarenessStage.Quarantine,
+                context.IsObjectiveRoute
+                    ? "Antivirus Heavy intercepted the cursor on an objective-adjacent route."
+                    : "Antivirus Heavy flagged anomalous cursor activity.")),
+            new SecurityActionNode(context => ApplyModifiedTraceAndLog(
+                context,
+                SecurityBehaviorTuning.AntivirusCursorTraceBonus + (context.IsObjectiveRoute ? SecurityBehaviorTuning.ObjectiveRouteTraceBonus : 0))),
+            new SecurityActionNode(context =>
+            {
+                if (context.IsObjectiveRoute || context.IsObjectivePath)
+                {
+                    context.ApplyForcedLock(context.PrimaryPath, SecurityBehaviorTuning.ForcedLockDurationTurns, "Antivirus Heavy locked the contested node");
+                }
+
+                return SecurityBehaviorStatus.Success;
+            }));
+    }
+
+    private static SecurityBehaviorNode BuildBackupRepairerCursorBehavior()
+    {
+        return new SecuritySequenceNode(
+            new SecurityConditionNode(context => context.Agent != null),
+            new SecurityActionNode(context => AlertSingleAgent(
+                context,
+                context.IsObjectiveRoute ? SecurityAwarenessStage.ActiveScan : SecurityAwarenessStage.Suspicious,
+                context.IsObjectiveRoute
+                    ? "Backup Repairer detected cursor motion near a protected zone."
+                    : "Backup Repairer logged cursor drift.")),
+            new SecurityActionNode(context => ApplyModifiedTraceAndLog(
+                context,
+                SecurityBehaviorTuning.BackupRepairerCursorTraceBonus)),
+            new SecurityActionNode(context =>
+            {
+                context.ApplyScanPressure(context.PrimaryPath, SecurityBehaviorTuning.BackupRepairerScanPressureDurationTurns, "Backup Repairer initiated integrity scan");
+                return SecurityBehaviorStatus.Success;
+            }));
+    }
+
+    private static SecurityBehaviorNode BuildAntivirusFolderBehavior()
+    {
+        return new SecuritySequenceNode(
+            new SecurityConditionNode(context => context.Agent != null),
+            new SecurityActionNode(context => AlertSingleAgent(
+                context,
+                context.IsObjectiveRoute ? SecurityAwarenessStage.Purge : SecurityAwarenessStage.Quarantine,
+                context.IsObjectiveRoute
+                    ? "Antivirus Heavy quarantined a traversal path toward the objective."
+                    : "Antivirus Heavy quarantined the folder traversal.")),
+            new SecurityActionNode(context => ApplyModifiedTraceAndLog(
+                context,
+                SecurityBehaviorTuning.AntivirusFolderNavigationTraceBonus + (context.IsObjectiveRoute ? SecurityBehaviorTuning.ObjectiveRouteTraceBonus : 0))),
+            new SecurityActionNode(context =>
+            {
+                context.MarkTrackedPath(context.PrimaryPath, SecurityBehaviorTuning.TraceMarkerDurationTurns, "Antivirus Heavy marked the traversal route");
+                if (context.IsObjectiveRoute)
+                {
+                    context.ApplyForcedLock(context.PrimaryPath, SecurityBehaviorTuning.ForcedLockDurationTurns, "Antivirus Heavy hardened the objective-facing folder");
+                }
+
+                return SecurityBehaviorStatus.Success;
+            }));
+    }
+
+    private static SecurityBehaviorNode BuildBackupRepairerFolderBehavior()
+    {
+        return new SecuritySequenceNode(
+            new SecurityConditionNode(context => context.Agent != null),
+            new SecurityActionNode(context => AlertSingleAgent(
+                context,
+                context.IsObjectiveRoute ? SecurityAwarenessStage.ActiveScan : context.AwarenessStage,
+                context.IsObjectiveRoute
+                    ? "Backup Repairer scheduled a sweep of the traversed objective path."
+                    : "Backup Repairer logged folder traversal for review.")),
+            new SecurityActionNode(context => ApplyModifiedTraceAndLog(
+                context,
+                SecurityBehaviorTuning.BackupRepairerFolderNavigationTraceBonus)),
+            new SecurityActionNode(context =>
+            {
+                if (context.IsObjectiveRoute)
+                {
+                    context.MarkTrackedPath(context.PrimaryPath, SecurityBehaviorTuning.TraceMarkerDurationTurns, "Backup Repairer queued a restoration sweep");
+                }
+
+                return SecurityBehaviorStatus.Success;
+            }));
+    }
+
+    private static SecurityBehaviorNode BuildAntivirusSearchBehavior()
+    {
+        return new SecuritySequenceNode(
+            new SecurityConditionNode(context => context.Agent != null),
+            new SecurityActionNode(context => AlertSingleAgent(
+                context,
+                context.IsObjectivePath || context.IsObjectiveRoute ? SecurityAwarenessStage.Purge : SecurityAwarenessStage.Quarantine,
+                context.IsObjectivePath || context.IsObjectiveRoute
+                    ? "Antivirus Heavy matched the search signature against a known threat vector."
+                    : "Antivirus Heavy classified the search query as a potential intrusion.")),
+            new SecurityActionNode(context => ApplyModifiedTraceAndLog(
+                context,
+                SecurityBehaviorTuning.AntivirusSearchTraceBonus + ((context.IsObjectivePath || context.IsObjectiveRoute) ? SecurityBehaviorTuning.ObjectiveSearchTraceBonus : 0))),
+            new SecurityActionNode(context =>
+            {
+                if (context.IsObjectivePath || context.IsObjectiveRoute)
+                {
+                    context.ApplyForcedLock(context.PrimaryPath, SecurityBehaviorTuning.ForcedLockDurationTurns, "Antivirus Heavy locked the matched objective node");
+                    context.MarkTrackedPath(context.PrimaryPath, SecurityBehaviorTuning.TraceMarkerDurationTurns, "Antivirus Heavy pinned the threat signature");
+                }
+
+                return SecurityBehaviorStatus.Success;
+            }));
+    }
+
+    private static SecurityBehaviorNode BuildBackupRepairerSearchBehavior()
+    {
+        return new SecuritySequenceNode(
+            new SecurityConditionNode(context => context.Agent != null),
+            new SecurityActionNode(context => AlertSingleAgent(
+                context,
+                context.IsObjectivePath || context.IsObjectiveRoute ? SecurityAwarenessStage.ActiveScan : SecurityAwarenessStage.Suspicious,
+                context.IsObjectivePath || context.IsObjectiveRoute
+                    ? "Backup Repairer detected a search query near a protected archive."
+                    : "Backup Repairer logged an unusual search pattern.")),
+            new SecurityActionNode(context => ApplyModifiedTraceAndLog(
+                context,
+                SecurityBehaviorTuning.BackupRepairerSearchTraceBonus)),
+            new SecurityActionNode(context =>
+            {
+                context.ApplyScanPressure(context.CurrentFolderPath, SecurityBehaviorTuning.BackupRepairerScanPressureDurationTurns, "Backup Repairer initiated integrity scan on current folder");
+                return SecurityBehaviorStatus.Success;
+            }));
+    }
+
+    private static SecurityBehaviorNode BuildBackupRepairerRestoreBehavior()
+    {
+        return new SecuritySequenceNode(
+            new SecurityConditionNode(context => context.RestoreNode != null),
+            new SecurityActionNode(context =>
+            {
+                context.RestoreNode!(context.PrimaryPath);
+                context.AddTrace(InfiltrationTuning.BackupRepairTraceIncrease, $"Backup Repairer restored node at {context.PrimaryPath}");
+                context.AddLog($"Backup Repairer restored cleared node: {context.PrimaryPath}");
                 return SecurityBehaviorStatus.Success;
             }));
     }

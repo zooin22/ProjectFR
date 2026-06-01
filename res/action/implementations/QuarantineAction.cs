@@ -28,7 +28,7 @@ public class QuarantineAction : ActionBase
         if (context.Target == null || context.StatusEffects == null)
             return new ActionResult(false, "Invalid target or status effects system");
 
-        context.Actor.ConsumeAp(ApCost);
+        context.ConsumeAp(ApCost);
 
         context.StatusEffects.AddEffect(
             context.Target.Id,

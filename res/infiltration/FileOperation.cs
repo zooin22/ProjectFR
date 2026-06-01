@@ -11,6 +11,9 @@ public sealed class FileOperation
     public int ElapsedTicks { get; private set; }
     public OperationStatus Status { get; private set; } = OperationStatus.Queued;
     public bool CompletionHandled { get; private set; }
+    public ExplorerNodeKind NodeKind { get; set; } = ExplorerNodeKind.File;
+    public long NodeSize { get; set; }
+    public List<string> CompletionNotes { get; } = new();
 
     public FileOperation(OperationType type, string targetNodePath, int requiredTicks = 1, string? secondaryTargetPath = null)
     {

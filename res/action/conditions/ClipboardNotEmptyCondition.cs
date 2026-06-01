@@ -6,6 +6,6 @@ public class ClipboardNotEmptyCondition : IActionCondition
 
     public bool Check(ActionContext context)
     {
-        return context.Clipboard != null && context.Clipboard.HasContent;
+        return context.ClipboardHasContent;
     }
 }

@@ -29,7 +29,7 @@ public class CutAction : ActionBase
         if (context.Clipboard == null)
             return new ActionResult(false, "No clipboard available");
 
-        context.Actor.ConsumeAp(ApCost);
+        context.ConsumeAp(ApCost);
         int damage = ActionConstants.CutDamage;
         var target = context.Target;
         if (target == null)

@@ -16,7 +16,7 @@ public static class BattleFactory
         );
     }
 
-    public static BattleDungeon CreateDefaultDungeon()
+    public static BattleDungeon CreateDefaultDungeon(MissionData? mission = null)
     {
         var root = new FolderNode(BattleConstants.DungeonRootName, BattleConstants.DungeonRootPath, CreateFolderProfile("Root Directory", NodeThreatLevel.Low, 8, 2, 1));
         var buildCache = new FolderNode(BattleConstants.RootBuildCacheName, BattleConstants.RootBuildCachePath, CreateFolderProfile("Guard Folder", NodeThreatLevel.Medium, 9, 2, 2));
@@ -31,6 +31,7 @@ public static class BattleFactory
         root.AddChild(buildCache);
 
         buildCache.AddChild(new FileNode(BattleConstants.CacheTempName, BattleConstants.CacheTempPath, BattleConstants.CacheTempSize, CreateFileProfile("Temp File", NodeThreatLevel.Medium, 8, 2, 2)));
+        buildCache.AddChild(new FileNode(BattleConstants.SystemLogName, BattleConstants.SystemLogPath, BattleConstants.SystemLogSize, CreateFileProfile("Log File", NodeThreatLevel.Medium, 7, 2, 2)));
         buildCache.AddChild(assets);
 
         assets.AddChild(bossArchive);
@@ -60,7 +61,87 @@ public static class BattleFactory
             )
         };
 
-        return new BattleDungeon(root, metadata);
+        var dungeon = new BattleDungeon(root, metadata);
+        if (mission != null)
+        {
+            ApplyMissionVariants(dungeon, mission, buildCache);
+        }
+
+        return dungeon;
+    }
+
+    private static void ApplyMissionVariants(BattleDungeon dungeon, MissionData mission, FolderNode buildCache)
+    {
+        switch (mission.Id)
+        {
+            case "mission_delete_readme":
+            case "mission_extract_readme":
+                BoostNodeProfile(dungeon.Root, BattleConstants.RootReadmePath, NodeThreatLevel.High, hpBonus: 3, apBonus: 1);
+                break;
+
+            case "mission_modify_syslog":
+                BoostNodeProfile(dungeon.Root, BattleConstants.SystemLogPath, NodeThreatLevel.High, hpBonus: 2, apBonus: 1);
+                buildCache.AddChild(new FileNode("audit_snapshot.dat", $"{BattleConstants.RootBuildCachePath}/audit_snapshot.dat", 5,
+                    CreateFileProfile("Audit File", NodeThreatLevel.Medium, 6, 2, 2)));
+                break;
+
+            case "mission_extract_boss":
+            case "mission_delete_boss":
+                BoostNodeProfile(dungeon.Root, BattleConstants.BossZipPath, NodeThreatLevel.Critical, hpBonus: 4, apBonus: 1);
+                break;
+
+            case "mission_scan_cache":
+                buildCache.AddChild(new FileNode("index.db", $"{BattleConstants.RootBuildCachePath}/index.db", 8,
+                    CreateFileProfile("Index File", NodeThreatLevel.Medium, 7, 2, 2)));
+                buildCache.AddChild(new FileNode("scan_queue.tmp", $"{BattleConstants.RootBuildCachePath}/scan_queue.tmp", 3,
+                    CreateFileProfile("Queue File", NodeThreatLevel.Low, 5, 2, 1)));
+                break;
+
+            case "mission_escape_only":
+                ReduceAllNodeProfiles(dungeon.Root, hpReduction: 2);
+                break;
+        }
+    }
+
+    private static void BoostNodeProfile(ContainerNode container, string targetPath, NodeThreatLevel newThreat, int hpBonus, int apBonus)
+    {
+        foreach (var node in EnumerateAll(container))
+        {
+            if (!string.Equals(node.Path, targetPath, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var p = node.CombatProfile;
+            node.CombatProfile = new NodeCombatProfile(
+                p.TypeName, newThreat.ToString().ToUpperInvariant(), newThreat,
+                p.BaseMaxHp + hpBonus, p.BaseMaxAp + apBonus, p.BaseAttackPower + 1,
+                p.IsBoss, p.RevealsChildrenOnOpen, p.RevealSummary);
+            return;
+        }
+    }
+
+    private static void ReduceAllNodeProfiles(ContainerNode container, int hpReduction)
+    {
+        foreach (var node in EnumerateAll(container))
+        {
+            var p = node.CombatProfile;
+            node.CombatProfile = new NodeCombatProfile(
+                p.TypeName, p.ThreatLabel, p.ThreatLevel,
+                Math.Max(1, p.BaseMaxHp - hpReduction), p.BaseMaxAp, p.BaseAttackPower,
+                p.IsBoss, p.RevealsChildrenOnOpen, p.RevealSummary);
+        }
+    }
+
+    private static IEnumerable<NodeData> EnumerateAll(ContainerNode container)
+    {
+        foreach (var child in container.Children)
+        {
+            yield return child;
+            if (child is ContainerNode sub)
+            {
+                foreach (var nested in EnumerateAll(sub))
+                    yield return nested;
+            }
+        }
     }
 
     public static List<(ActorState Actor, NodeData NodeData)> CreateEncounter(ContainerNode container, CampaignModifiers modifiers, Func<NodeData, bool>? include = null)

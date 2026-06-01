@@ -20,13 +20,10 @@ public class LogForgeAction : ActionBase
 
     public override ActionResult Execute(ActionContext context)
     {
-        if (context.Actor == null)
-            return new ActionResult(false, "No actor in context");
-
         if (context.TargetNode == null)
             return new ActionResult(false, "No target selected");
 
-        context.Actor.ConsumeAp(ApCost);
+        context.ConsumeAp(ApCost);
         return new ActionResult(true, $"Rewrote traces around {context.TargetNode.Name}");
     }
 }

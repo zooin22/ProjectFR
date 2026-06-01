@@ -18,6 +18,12 @@ public partial class BattleScene : Control
     private const int ActionButtonWidth = 132;
     private const int ActionButtonHeight = 48;
 
+    // TODO(battle-removal): BattleManager surface still load-bearing — port before deleting:
+    //   HP display + StatusEffects (conditions + inspector), Enemies (ActionContext.AllActors),
+    //   Clipboard (ClipboardSystem ↔ InfiltrationState.Clipboard), BattleLog (UI),
+    //   FinishBattle/LoadEncounter (core game loop).
+    //   Decoupled so far: action-button gate (RunStatus), turn-label (RunStatus),
+    //   player AP (CursorAgent.ActionPoints gates all operations and drives ActionContext AP checks).
     private BattleManager _battleManager = null!;
     private BattleDungeon _dungeon = null!;
     private InfiltrationManager _infiltrationManager = null!;
@@ -47,6 +53,7 @@ public partial class BattleScene : Control
     private Label _inspectorStatusLabel = null!;
     private Label _inspectorHintLabel = null!;
     private Label _securityAgentsLabel = null!;
+    private RichTextLabel _securitySectionLabel = null!;
     private ProgressBar _targetHpBar = null!;
     private ProgressBar _targetApBar = null!;
     private RichTextLabel _operationLogLabel = null!;
@@ -80,7 +87,14 @@ public partial class BattleScene : Control
     private Control _tempWindow = null!;
     private Button _tempWindowCloseButton = null!;
     private Label _tempWindowStatusLabel = null!;
-    private RichTextLabel _tempWindowItemsLabel = null!;
+    private ItemList _tempWindowItemList = null!;
+    private Button _logWindowButton = null!;
+    private Control _logWindow = null!;
+    private Button _logWindowCloseButton = null!;
+    private Label _logWindowStatusLabel = null!;
+    private ItemList _logWindowItemList = null!;
+    private Button _logWindowForgeButton = null!;
+    private int _selectedLogEntryIndex = -1;
 
     private readonly Dictionary<long, string> _contextActionMap = new();
 
@@ -149,6 +163,7 @@ public partial class BattleScene : Control
         _inspectorStatusLabel = GetNode<Label>("RootMargin/MainVBox/MainSplit/InspectorPanel/InspectorMargin/InspectorVBox/InspectorStatusLabel");
         _inspectorHintLabel = GetNode<Label>("RootMargin/MainVBox/MainSplit/InspectorPanel/InspectorMargin/InspectorVBox/InspectorHintLabel");
         _securityAgentsLabel = GetNode<Label>("RootMargin/MainVBox/MainSplit/InspectorPanel/InspectorMargin/InspectorVBox/SecurityAgentsLabel");
+        _securitySectionLabel = GetNode<RichTextLabel>("RootMargin/MainVBox/MainSplit/InspectorPanel/InspectorMargin/InspectorVBox/SecuritySectionLabel");
         _targetHpBar = GetNode<ProgressBar>("RootMargin/MainVBox/MainSplit/InspectorPanel/InspectorMargin/InspectorVBox/TargetHpBar");
         _targetApBar = GetNode<ProgressBar>("RootMargin/MainVBox/MainSplit/InspectorPanel/InspectorMargin/InspectorVBox/TargetApBar");
         _operationLogLabel = GetNode<RichTextLabel>("RootMargin/MainVBox/MainSplit/InspectorPanel/InspectorMargin/InspectorVBox/OperationLogLabel");
@@ -182,7 +197,13 @@ public partial class BattleScene : Control
         _tempWindow = GetNode<Control>("TempWindow");
         _tempWindowCloseButton = GetNode<Button>("TempWindow/TempWindowMargin/TempWindowVBox/TempWindowHeaderRow/TempWindowCloseButton");
         _tempWindowStatusLabel = GetNode<Label>("TempWindow/TempWindowMargin/TempWindowVBox/TempWindowStatusLabel");
-        _tempWindowItemsLabel = GetNode<RichTextLabel>("TempWindow/TempWindowMargin/TempWindowVBox/TempWindowItemsLabel");
+        _tempWindowItemList = GetNode<ItemList>("TempWindow/TempWindowMargin/TempWindowVBox/TempWindowItemList");
+        _logWindowButton = GetNode<Button>("RootMargin/MainVBox/ActionPanel/ActionMargin/ActionVBox/CommandQueuePanel/CommandQueueMargin/CommandQueueVBox/CommandQueueButtonRow/LogWindowButton");
+        _logWindow = GetNode<Control>("LogWindow");
+        _logWindowCloseButton = GetNode<Button>("LogWindow/LogWindowMargin/LogWindowVBox/LogWindowHeaderRow/LogWindowCloseButton");
+        _logWindowStatusLabel = GetNode<Label>("LogWindow/LogWindowMargin/LogWindowVBox/LogWindowStatusLabel");
+        _logWindowItemList = GetNode<ItemList>("LogWindow/LogWindowMargin/LogWindowVBox/LogWindowItemList");
+        _logWindowForgeButton = GetNode<Button>("LogWindow/LogWindowMargin/LogWindowVBox/LogWindowActionRow/LogWindowForgeButton");
     }
 
     private void BindUiEvents()
@@ -209,8 +230,13 @@ public partial class BattleScene : Control
         _explorerContextMenu.IdPressed += OnExplorerContextMenuPressed;
         _clipboardWindowCloseButton.Pressed += CloseClipboardWindow;
         _tempWindowCloseButton.Pressed += CloseTempWindow;
+        _tempWindowItemList.ItemSelected += OnTempWindowItemSelected;
         _storeInPouchButton.Pressed += StoreSelectedClipboardEntryInPouch;
         _restoreFromPouchButton.Pressed += RestoreSelectedPouchEntryToClipboard;
+        _logWindowButton.Pressed += ToggleLogWindow;
+        _logWindowCloseButton.Pressed += CloseLogWindow;
+        _logWindowItemList.ItemSelected += OnLogWindowItemSelected;
+        _logWindowForgeButton.Pressed += QueueLogForgeFromLogWindow;
     }
 
     private void InitializeUiState()
@@ -308,7 +334,7 @@ public partial class BattleScene : Control
         _missionResult = null;
         _missionResolved = false;
 
-        _dungeon = BattleFactory.CreateDefaultDungeon();
+        _dungeon = BattleFactory.CreateDefaultDungeon(_currentMission);
         BuildActorIndex(_dungeon.Root);
 
         _infiltrationManager = new InfiltrationManager(_currentMission);
@@ -320,8 +346,8 @@ public partial class BattleScene : Control
             EndBattleWhenEnemiesCleared = false
         };
         _battleManager.StartBattle();
-        _battleManager.AddLog($"Mission accepted: {_currentMission.Title} / Client: {_currentMission.Client.Name}");
-        _battleManager.AddLog($"Faction: {_currentMission.Client.Faction} / { _campaignModifiers.Summary }");
+        AddOperationLog($"Mission accepted: {_currentMission.Title} / Client: {_currentMission.Client.Name}");
+        AddOperationLog($"Faction: {_currentMission.Client.Faction} / { _campaignModifiers.Summary }");
 
         LoadContainer(_dungeon.Root, isFirstContainer: true, reason: "Connected to root explorer.");
     }
@@ -355,29 +381,56 @@ public partial class BattleScene : Control
 
     private void SeedSecurityAgents()
     {
-        _infiltrationManager.AddSecurityAgent(new SecurityAgent(
-            SecurityAgentType.IndexerScout,
-            "Indexer Scout",
-            BattleConstants.RootReadmePath,
-            new[] { BattleConstants.RootReadmePath, BattleConstants.RootBuildCachePath }));
+        var targetPath = _currentMission.TargetPath;
+        var agents = new List<SecurityAgent>
+        {
+            new(SecurityAgentType.IndexerScout, "Indexer Scout",
+                BattleConstants.RootReadmePath,
+                new[] { BattleConstants.RootReadmePath, BattleConstants.RootBuildCachePath }),
+            new(SecurityAgentType.GuardScanner, "Guard Scanner",
+                BattleConstants.RootBuildCachePath,
+                new[] { BattleConstants.RootBuildCachePath, BattleConstants.CacheTempPath }),
+            new(SecurityAgentType.FirewallSentinel, "Firewall Sentinel",
+                BattleConstants.CacheAssetsPath,
+                new[] { BattleConstants.CacheAssetsPath }),
+            new(SecurityAgentType.AntivirusHeavy, "Antivirus Heavy",
+                BattleConstants.BossZipPath,
+                new[] { BattleConstants.BossZipPath }),
+            new(SecurityAgentType.BackupRepairer, "Backup Repairer",
+                BattleConstants.SystemLogPath,
+                new[] { BattleConstants.SystemLogPath, BattleConstants.RootBuildCachePath }),
+            new(SecurityAgentType.AiMonitor, "AI Monitor",
+                BattleConstants.BossZipPath,
+                new[] { BattleConstants.CacheTempPath, BattleConstants.BossZipPath })
+        };
+        EnsureMissionTargetPatrolled(agents, targetPath);
+        foreach (var agent in agents)
+            _infiltrationManager.AddSecurityAgent(agent);
+    }
 
-        _infiltrationManager.AddSecurityAgent(new SecurityAgent(
-            SecurityAgentType.GuardScanner,
-            "Guard Scanner",
-            BattleConstants.RootBuildCachePath,
-            new[] { BattleConstants.RootBuildCachePath, BattleConstants.CacheTempPath }));
+    private static void EnsureMissionTargetPatrolled(List<SecurityAgent> agents, string targetPath)
+    {
+        if (string.IsNullOrWhiteSpace(targetPath))
+            return;
+        if (agents.Any(a => a.PatrolRoute.Contains(targetPath, StringComparer.OrdinalIgnoreCase)))
+            return;
 
-        _infiltrationManager.AddSecurityAgent(new SecurityAgent(
-            SecurityAgentType.FirewallSentinel,
-            "Firewall Sentinel",
-            BattleConstants.CacheAssetsPath,
-            new[] { BattleConstants.CacheAssetsPath }));
-
-        _infiltrationManager.AddSecurityAgent(new SecurityAgent(
-            SecurityAgentType.AntivirusHeavy,
-            "Antivirus Heavy",
-            BattleConstants.BossZipPath,
-            new[] { BattleConstants.BossZipPath }));
+        SecurityAgent? bestFit = null;
+        var bestPrefixLength = 0;
+        foreach (var agent in agents)
+        {
+            foreach (var routePath in agent.PatrolRoute)
+            {
+                var trimmed = routePath.TrimEnd('/');
+                if (targetPath.StartsWith(trimmed + '/', StringComparison.OrdinalIgnoreCase)
+                    && trimmed.Length > bestPrefixLength)
+                {
+                    bestFit = agent;
+                    bestPrefixLength = trimmed.Length;
+                }
+            }
+        }
+        bestFit?.PatrolRoute.Add(targetPath);
     }
 
     private void LoadContainer(ContainerNode container, bool isFirstContainer = false, string? reason = null)
@@ -399,9 +452,9 @@ public partial class BattleScene : Control
         _battleManager.LoadEncounter(encounterActors, $"Entered {container.Path}", restorePlayerAp: !isFirstContainer);
 
         var metadata = _dungeon.GetCurrentMetadata();
-        _battleManager.AddLog($"Theme: {metadata.ThemeName}");
-        _battleManager.AddLog($"Event: {metadata.EventSummary}");
-        _battleManager.AddLog($"Objective: {_currentMission.ObjectiveType} {_currentMission.TargetPath} before turn {_effectiveTurnLimit}");
+        AddOperationLog($"Theme: {metadata.ThemeName}");
+        AddOperationLog($"Event: {metadata.EventSummary}");
+        AddOperationLog($"Objective: {_currentMission.ObjectiveType} {_currentMission.TargetPath} before turn {_effectiveTurnLimit}");
 
         if (!string.IsNullOrWhiteSpace(reason))
         {
@@ -430,7 +483,7 @@ public partial class BattleScene : Control
 
     private void QueueSelectedCommand(string actionId)
     {
-        if (_battleManager.IsBattleEnd)
+        if (_infiltrationManager.State.RunStatus != RunStatus.Active)
             return;
 
         var selectedNode = GetSelectedNode();
@@ -453,11 +506,11 @@ public partial class BattleScene : Control
             return;
         }
 
-        var previewContext = new ActionContext(_battleManager.Player)
+        var cursor = _infiltrationManager.State.CursorAgent;
+        var previewContext = new ActionContext(cursor.ActionPoints, _infiltrationManager.State.Clipboard.Count)
         {
             Target = targetActor,
             TargetNode = selectedNode,
-            Clipboard = _battleManager.Clipboard,
             StatusEffects = _battleManager.StatusEffects,
             AllActors = _battleManager.Enemies
         };
@@ -501,27 +554,31 @@ public partial class BattleScene : Control
             }
 
             _infiltrationManager.AdvanceTurn();
+            ApplyBackupRepairerRestores();
+            ApplyDetectionDamage();
             ProcessCompletedOperations();
             ApplyMissionFailureChecks();
-            if (_battleManager.IsBattleEnd)
+            if (_infiltrationManager.State.RunStatus != RunStatus.Active)
                 break;
         }
 
         // Drain any in-flight deferred operations that need extra ticks to finish.
         // Without this, a Copy (2 ticks) queued alone would stay Running and never sync to clipboard.
         const int MaxDrainTurns = 3;
-        for (var drainPass = 0; drainPass < MaxDrainTurns && !_battleManager.IsBattleEnd; drainPass++)
+        for (var drainPass = 0; drainPass < MaxDrainTurns && _infiltrationManager.State.RunStatus == RunStatus.Active; drainPass++)
         {
             if (!_infiltrationManager.State.ActiveOperations.Any(op => op.Status == OperationStatus.Running && !op.CompletionHandled))
                 break;
             _infiltrationManager.AdvanceTurn();
+            ApplyBackupRepairerRestores();
+            ApplyDetectionDamage();
             ProcessCompletedOperations();
             ApplyMissionFailureChecks();
         }
 
         _infiltrationManager.ClearQueue();
         ApplyMissionFailureChecks();
-        if (_battleManager.IsBattleEnd)
+        if (_infiltrationManager.State.RunStatus != RunStatus.Active)
         {
             OnBattleEnd();
         }
@@ -538,6 +595,15 @@ public partial class BattleScene : Control
             return false;
         }
 
+        var actionIdForAp = MapOperationTypeToActionId(entry.OperationType);
+        var apCost = actionIdForAp != null ? (_actionRegistry.GetAction(actionIdForAp)?.ApCost ?? 0) : 0;
+        var cursor = _infiltrationManager.State.CursorAgent;
+        if (apCost > 0 && cursor.ActionPoints < apCost)
+        {
+            AppendConsoleFeed($"ap insufficient :: {entry.OperationType} :: {apCost}AP needed :: {cursor.ActionPoints}AP remaining");
+            return false;
+        }
+
         if (!IsDeferredOperation(entry.OperationType)
             && !CanExecuteImmediateOperation(entry.OperationType, selectedNode))
         {
@@ -546,7 +612,11 @@ public partial class BattleScene : Control
 
         _selectedNodePath = selectedNode.Path;
         var requiredTicks = GetRequiredTicksForOperation(entry.OperationType, selectedNode);
-        var operation = new FileOperation(entry.OperationType, selectedNode.Path, requiredTicks, entry.SecondaryTargetPath);
+        var operation = new FileOperation(entry.OperationType, selectedNode.Path, requiredTicks, entry.SecondaryTargetPath)
+        {
+            NodeKind = ResolveExplorerNodeKind(selectedNode),
+            NodeSize = selectedNode.Size
+        };
         _infiltrationManager.StartOperation(operation);
 
         if (entry.OperationType == OperationType.MoveCursor)
@@ -568,6 +638,7 @@ public partial class BattleScene : Control
         }
         else
         {
+            cursor.ActionPoints = Math.Max(0, cursor.ActionPoints - apCost);
             AppendConsoleFeed($"op start :: {entry.OperationType} -> {selectedNode.Name} :: {requiredTicks}T");
         }
 
@@ -604,11 +675,11 @@ public partial class BattleScene : Control
             return false;
         }
 
-        var previewContext = new ActionContext(_battleManager.Player)
+        var canExecCursor = _infiltrationManager.State.CursorAgent;
+        var previewContext = new ActionContext(canExecCursor.ActionPoints, _infiltrationManager.State.Clipboard.Count)
         {
             Target = targetActor,
             TargetNode = selectedNode,
-            Clipboard = _battleManager.Clipboard,
             StatusEffects = _battleManager.StatusEffects,
             AllActors = _battleManager.Enemies
         };
@@ -644,13 +715,15 @@ public partial class BattleScene : Control
             return;
         }
 
-        var context = new ActionContext(_battleManager.Player)
+        var execCursor = _infiltrationManager.State.CursorAgent;
+        var context = new ActionContext(execCursor.ActionPoints, _infiltrationManager.State.Clipboard.Count)
         {
             Target = targetActor,
             TargetNode = selectedNode,
             Clipboard = _battleManager.Clipboard,
             StatusEffects = _battleManager.StatusEffects,
-            AllActors = _battleManager.Enemies
+            AllActors = _battleManager.Enemies,
+            ConsumeApCallback = ap => execCursor.ActionPoints = Math.Max(0, execCursor.ActionPoints - ap)
         };
 
         if (actionId.Equals(ActionIds.Open, StringComparison.OrdinalIgnoreCase)
@@ -661,9 +734,11 @@ public partial class BattleScene : Control
             return;
         }
 
-        var result = _battleManager.PlayerAction(action, context);
+        var result = action.Execute(context);
+        AddOperationLog($"Player: {result.Message}");
         if (result.Success)
         {
+            SyncCursorApToPlayer();
             _executedPlayerActions.Add(actionId);
             AppendConsoleFeed($"exec :: {actionId} -> {selectedNode.Name}");
 
@@ -692,6 +767,12 @@ public partial class BattleScene : Control
             {
                 // no skill behavior registered; keep default action result only
             }
+
+            if (actionId.Equals(ActionIds.Clean, StringComparison.OrdinalIgnoreCase)
+                && _infiltrationManager.TryClearDetection($"Clean action on {selectedNode.Name}"))
+            {
+                AppendConsoleFeed($"detection cleared :: clean action :: {selectedNode.Name}");
+            }
         }
         else
         {
@@ -717,39 +798,14 @@ public partial class BattleScene : Control
             if (operation.Type == OperationType.RewriteLog)
             {
                 _executedPlayerActions.Add(ActionIds.LogForge);
-                _infiltrationManager.ReduceTrace(InfiltrationTuning.RewriteLogTraceReduction, $"Log rewritten at {node.Path}");
-                _battleManager.AddLog($"Log rewritten: {node.Name}");
-
-                var clearedEffects = new List<string>();
-                if (_infiltrationManager.ClearTrackedPath(node.Path, "Rewrite Log scrubbed node route"))
-                {
-                    clearedEffects.Add("tracked");
-                }
-
-                if (_infiltrationManager.ClearTrackedPath(_dungeon.CurrentContainer.Path, "Rewrite Log scrubbed current folder route"))
-                {
-                    clearedEffects.Add("folder-tracked");
-                }
-
-                if (_infiltrationManager.ClearScanPressure(node.Path, "Rewrite Log diffused node scan pressure"))
-                {
-                    clearedEffects.Add("pressure");
-                }
-
-                if (_infiltrationManager.ClearScanPressure(_dungeon.CurrentContainer.Path, "Rewrite Log diffused folder scan pressure"))
-                {
-                    clearedEffects.Add("folder-pressure");
-                }
-
-                if (clearedEffects.Count > 0)
-                {
-                    AppendConsoleFeed($"log scrub :: {node.Name} :: cleared {string.Join(", ", clearedEffects)}");
-                }
+                AddOperationLog($"Log rewritten: {node.Name}");
+                foreach (var note in operation.CompletionNotes)
+                    AppendConsoleFeed($"{note} :: {node.Name}");
 
                 var logForgeMissionUpdate = _missionProgress.RegisterAction(ActionIds.LogForge, node.Path);
                 if (!string.IsNullOrWhiteSpace(logForgeMissionUpdate))
                 {
-                    _battleManager.AddLog(logForgeMissionUpdate);
+                    AddOperationLog(logForgeMissionUpdate);
                     AppendConsoleFeed(logForgeMissionUpdate);
                 }
                 if (_missionProgress.ObjectiveCompleted && !_infiltrationManager.State.ExitUnlocked)
@@ -779,10 +835,8 @@ public partial class BattleScene : Control
             }
             else if (operation.Type == OperationType.Copy)
             {
-                // Keep the infiltration clipboard and legacy battle clipboard in sync using
-                // the real node type so folder/archive copies preserve their tactical behavior.
-                var copyOk = _infiltrationManager.TryCopyToClipboard(node.Path, ResolveExplorerNodeKind(node), node.Size);
-                if (!copyOk)
+                var copyBlocked = operation.CompletionNotes.Any(n => n.StartsWith("copy blocked"));
+                if (copyBlocked)
                 {
                     AppendConsoleFeed($"copy blocked :: clipboard full :: {node.Name}");
                     operation.MarkCompletionHandled();
@@ -790,13 +844,12 @@ public partial class BattleScene : Control
                 }
 
                 _executedPlayerActions.Add(ActionIds.Copy);
-                _battleManager.Clipboard.Copy(node);
                 AppendConsoleFeed($"copy complete :: {node.Name}");
 
                 var copyMissionUpdate = _missionProgress.RegisterAction(ActionIds.Copy, node.Path);
                 if (!string.IsNullOrWhiteSpace(copyMissionUpdate))
                 {
-                    _battleManager.AddLog(copyMissionUpdate);
+                    AddOperationLog(copyMissionUpdate);
                     AppendConsoleFeed(copyMissionUpdate);
                 }
                 if (_missionProgress.ObjectiveCompleted && !_infiltrationManager.State.ExitUnlocked)
@@ -805,13 +858,45 @@ public partial class BattleScene : Control
                     AppendConsoleFeed("objective complete :: extraction unlocked :: return to root and extract");
                 }
             }
+            else if (operation.Type == OperationType.Cut)
+            {
+                ExecuteImmediateAction(operation.Type, node);
+                foreach (var note in operation.CompletionNotes)
+                    AppendConsoleFeed($"{note} :: {node.Name}");
+                if (operation.CompletionNotes.Count == 0)
+                    AppendConsoleFeed($"cut complete :: {node.Name}");
+            }
+            else if (operation.Type == OperationType.Paste)
+            {
+                ExecuteImmediateAction(operation.Type, node);
+                _battleManager.Clipboard.Clear();
+                foreach (var note in operation.CompletionNotes)
+                    AppendConsoleFeed($"{note} :: {node.Name}");
+                if (operation.CompletionNotes.Count == 0)
+                    AppendConsoleFeed($"paste complete :: {node.Name}");
+            }
             else if (operation.Type == OperationType.MoveCursor)
             {
                 // Cursor movement was already handled in InfiltrationManager.OnOperationCompleted.
             }
+            else if (operation.Type == OperationType.Stun)
+            {
+                var agentsAtTarget = _infiltrationManager.SecurityAgents
+                    .Where(a => string.Equals(a.CurrentNodePath, operation.TargetNodePath, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+                foreach (var agent in agentsAtTarget)
+                    agent.DisabledTurns = InfiltrationTuning.StunDurationTurns;
+                AppendConsoleFeed(agentsAtTarget.Count > 0
+                    ? $"stun applied :: {node.Name} :: {agentsAtTarget.Count} agent(s) disabled {InfiltrationTuning.StunDurationTurns}T"
+                    : $"stun no target :: {node.Name}");
+            }
             else
             {
-                ExecuteImmediateAction(operation.Type, node);
+                var fallbackActionId = MapOperationTypeToActionId(operation.Type);
+                if (fallbackActionId == null)
+                    AppendConsoleFeed($"op unhandled :: {operation.Type} :: {node.Name}");
+                else
+                    ExecuteImmediateAction(operation.Type, node);
             }
 
             operation.MarkCompletionHandled();
@@ -941,7 +1026,7 @@ public partial class BattleScene : Control
 
     private void TryExtractMission()
     {
-        if (_battleManager.IsBattleEnd || _missionResolved)
+        if (_infiltrationManager.State.RunStatus != RunStatus.Active || _missionResolved)
             return;
 
         var escapeOnlyObjective = _currentMission.ObjectiveType == MissionObjectiveType.Escape;
@@ -976,7 +1061,6 @@ public partial class BattleScene : Control
         }
 
         AppendConsoleFeed("extract success :: package delivered");
-        _battleManager.FinishBattle("Extraction complete. Package delivered.");
         OnBattleEnd();
         UpdateUi();
     }
@@ -988,7 +1072,8 @@ public partial class BattleScene : Control
 
     private static bool IsDeferredOperation(OperationType operationType)
     {
-        return operationType is OperationType.Copy or OperationType.Compress or OperationType.RewriteLog;
+        return operationType is OperationType.Copy or OperationType.Compress or OperationType.RewriteLog
+            or OperationType.Cut or OperationType.Paste or OperationType.Stun;
     }
 
     private static int GetRequiredTicksForOperation(OperationType operationType, NodeData node)
@@ -1070,14 +1155,55 @@ public partial class BattleScene : Control
         UpdateUi();
     }
 
+    private void ApplyBackupRepairerRestores()
+    {
+        foreach (var agent in _infiltrationManager.SecurityAgents
+            .Where(a => a.AgentType == SecurityAgentType.BackupRepairer && a.DisabledTurns <= 0))
+        {
+            var path = agent.CurrentNodePath;
+            if (!_dungeon.IsCleared(path))
+                continue;
+
+            if (!_dungeon.RestoreNode(path))
+                continue;
+
+            if (_nodeActors.TryGetValue(path, out var actor))
+                actor.Heal(actor.MaxHp);
+
+            _infiltrationManager.AddTrace(InfiltrationTuning.BackupRepairTraceIncrease, $"Backup Repairer restored node at {path}");
+            AppendConsoleFeed($"node restored :: BackupRepairer :: {_dungeon.GetNode(path)?.Name ?? path}");
+        }
+    }
+
+    private void ApplyDetectionDamage()
+    {
+        var damage = _infiltrationManager.State.LastTurnContactDamage;
+        if (damage <= 0)
+            return;
+
+        var cursorPath = _infiltrationManager.State.CursorAgent.CurrentNodePath;
+        var threateningAgents = _infiltrationManager.SecurityAgents
+            .Where(a => a.AgentType is SecurityAgentType.GuardScanner or SecurityAgentType.AntivirusHeavy
+                && string.Equals(a.CurrentNodePath, cursorPath, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        AppendConsoleFeed($"contact dmg :: {string.Join(", ", threateningAgents.Select(a => a.AgentType))} :: -{damage} HP");
+        AddOperationLog($"Operator took {damage} contact damage from detected agents at {cursorPath}");
+    }
+
     private void ApplyMissionFailureChecks()
     {
-        if (_battleManager.IsBattleEnd || _missionResolved)
+        if (_infiltrationManager.State.RunStatus != RunStatus.Active || _missionResolved)
             return;
+
+        if (!_infiltrationManager.State.IsOperatorAlive)
+        {
+            _infiltrationManager.SetRunFailed("Operator eliminated. Mission failed.");
+            return;
+        }
 
         if (_infiltrationManager.State.TurnCount >= _effectiveTurnLimit)
         {
-            _battleManager.FinishBattle($"Trace level critical. Turn limit {_effectiveTurnLimit} exceeded.");
+            _infiltrationManager.SetRunTimedOut();
         }
     }
 
@@ -1212,6 +1338,29 @@ public partial class BattleScene : Control
             _dragSourceNodePath = null;
             _dragHoverTargetPath = null;
             UpdateUi();
+            return;
+        }
+
+        if (@event is InputEventKey { Pressed: true, Echo: false } keyEvent && _infiltrationManager.State.RunStatus == RunStatus.Active)
+        {
+            switch (keyEvent.Keycode)
+            {
+                case Key.Enter or Key.KpEnter:
+                    if (_infiltrationManager.State.CommandQueue.Count > 0)
+                        ExecuteQueuedCommands();
+                    break;
+                case Key.Delete:
+                    if (GetSelectedNode() != null)
+                        QueueSelectedCommand(ActionIds.Delete);
+                    break;
+                case Key.Backspace:
+                    NavigateUp();
+                    break;
+                case Key.F5:
+                    ReloadCurrentContainer();
+                    UpdateUi();
+                    break;
+            }
         }
     }
 
@@ -1242,11 +1391,11 @@ public partial class BattleScene : Control
     private IEnumerable<string> BuildContextActionIds(NodeData node)
     {
         var actor = _nodeActors.GetValueOrDefault(node.Path);
-        var previewContext = new ActionContext(_battleManager.Player)
+        var ctxCursor = _infiltrationManager.State.CursorAgent;
+        var previewContext = new ActionContext(ctxCursor.ActionPoints, _infiltrationManager.State.Clipboard.Count)
         {
             Target = actor,
             TargetNode = node,
-            Clipboard = _battleManager.Clipboard,
             StatusEffects = _battleManager.StatusEffects,
             AllActors = _battleManager.Enemies
         };
@@ -1264,6 +1413,8 @@ public partial class BattleScene : Control
             ActionIds.ShowHidden,
             ActionIds.PermissionOverride,
             ActionIds.Copy,
+            ActionIds.Cut,
+            ActionIds.Paste,
             ActionIds.Compress,
             ActionIds.LogForge,
             ActionIds.Delete
@@ -1306,6 +1457,8 @@ public partial class BattleScene : Control
             ActionIds.ShowHidden => "Show Hidden",
             ActionIds.PermissionOverride => "Permission Override",
             ActionIds.Copy => "Copy",
+            ActionIds.Cut => "Cut",
+            ActionIds.Paste => "Paste",
             ActionIds.Delete => "Delete",
             ActionIds.Compress => "Compress",
             ActionIds.LogForge => "Rewrite Log",
@@ -1337,14 +1490,18 @@ public partial class BattleScene : Control
         var metadata = _dungeon.GetCurrentMetadata();
         _pathLabel.Text = $"Path: {_dungeon.CurrentContainer.Path}";
         _missionLabel.Text = $"Mission: {_currentMission.Title} 쨌 Objective: {_currentMission.ObjectiveType} {_currentMission.TargetPath}\nTheme: {metadata.ThemeName} 쨌 {metadata.EventSummary}";
-        _turnStateLabel.Text = $"Turn {_infiltrationManager.State.TurnCount}/{_effectiveTurnLimit} 쨌 State {_battleManager.CurrentState} 쨌 {_dungeon.GetProgressLabel()}";
+        _turnStateLabel.Text = $"Turn {_infiltrationManager.State.TurnCount}/{_effectiveTurnLimit} 쨌 {_infiltrationManager.State.RunStatus} 쨌 {_dungeon.GetProgressLabel()}";
+        var approachingTurnLimit = _infiltrationManager.State.TurnCount >= _effectiveTurnLimit - 2;
+        _turnStateLabel.Modulate = approachingTurnLimit ? new Color(1.0f, 0.35f, 0.35f, 1.0f) : Colors.White;
         _traceBar.MaxValue = _infiltrationManager.State.MaxTrace;
         _traceBar.Value = _infiltrationManager.State.Trace;
+        _traceBar.Modulate = approachingTurnLimit ? new Color(1.0f, 0.35f, 0.35f, 1.0f) : Colors.White;
         _traceLabel.Text = $"TRACE {_infiltrationManager.State.Trace}/{_infiltrationManager.State.MaxTrace} 쨌 Alert {_infiltrationManager.State.AlertStage} 쨌 Heat {CampaignState.Heat} 쨌 {_campaignModifiers.Summary}";
-        _playerStatusLabel.Text = $"Operator: HP {_battleManager.Player.CurrentHp}/{_battleManager.Player.MaxHp} 쨌 AP {_battleManager.Player.CurrentAp}/{_battleManager.Player.MaxAp}\nStatus: {FormatStatusEffects(_battleManager.StatusEffects.GetEffects(_battleManager.Player.Id))} 쨌 {BuildWindowSummary()}";
+        var cursorAgent = _infiltrationManager.State.CursorAgent;
+        _playerStatusLabel.Text = $"Operator: HP {_infiltrationManager.State.OperatorHp}/{_infiltrationManager.State.OperatorMaxHp} 쨌 AP {cursorAgent.ActionPoints}/{cursorAgent.MaxActionPoints}\nStatus: {FormatStatusEffects(_battleManager.StatusEffects.GetEffects(_battleManager.Player.Id))} 쨌 {BuildWindowSummary()}";
         _explorerStateLabel.Text = BuildExplorerStateSummary();
         _cursorStatusLabel.Text = BuildCursorStatusSummary();
-        _fieldSecurityLabel.Text = BuildFieldSecuritySummary();
+        _fieldSecurityLabel.Text = BuildFieldSecurityStatusLine();
         if (!string.IsNullOrWhiteSpace(_dragSourceNodePath))
         {
             _consoleHintLabel.Text = $"Dragging :: {_dragSourceNodePath} -> {(_dragHoverTargetPath ?? "(no drop target)")}";
@@ -1354,11 +1511,13 @@ public partial class BattleScene : Control
         RebuildFileTree();
         RebuildExplorerField();
         UpdateInspector();
+        UpdateSecuritySection();
         UpdateActionButtons();
         UpdateOperationLog();
         UpdateCommandQueueUi();
         UpdateClipboardWindowUi();
         UpdateTempWindowUi();
+        UpdateLogWindowUi();
         UpdateConsoleHint();
         UpdateBattleEndOverlay();
     }
@@ -1465,6 +1624,11 @@ public partial class BattleScene : Control
             var icon = ResolveNodeIcon(node);
             var isCursorHere = string.Equals(_infiltrationManager.State.CursorAgent.CurrentNodePath, node.Path, StringComparison.OrdinalIgnoreCase);
             var primaryLine = BuildDisplayName(node, agents, monitored);
+            if (agents.Count > 0)
+            {
+                primaryLine += " " + string.Join(" ", agents.Select(a => GetAgentTypeBadge(a.AgentType)));
+            }
+
             if (isCursorHere)
             {
                 primaryLine = $"> {primaryLine}";
@@ -1491,6 +1655,13 @@ public partial class BattleScene : Control
                 : monitored
                     ? new Color(1.0f, 0.84f, 0.52f, 1f)
                     : GetThreatColor(node));
+
+            var isDragHover = !string.IsNullOrWhiteSpace(_dragHoverTargetPath)
+                && string.Equals(_dragHoverTargetPath, node.Path, StringComparison.OrdinalIgnoreCase);
+            if (isDragHover)
+            {
+                _explorerFieldList.SetItemCustomBgColor(itemIndex, new Color(0.25f, 0.55f, 0.95f, 0.35f));
+            }
 
             if (string.Equals(_selectedNodePath, node.Path, StringComparison.OrdinalIgnoreCase))
             {
@@ -1528,6 +1699,14 @@ public partial class BattleScene : Control
     {
         var cursor = _infiltrationManager.State.CursorAgent;
         return $"Cursor Agent :: {cursor.CurrentNodePath} :: AP {cursor.ActionPoints}/{cursor.MaxActionPoints} :: Clipboard {_infiltrationManager.State.Clipboard.Count}/{cursor.ClipboardCapacity} :: Pouch {_infiltrationManager.State.PouchCache.Count}/{cursor.PouchCapacity}";
+    }
+
+    private string BuildFieldSecurityStatusLine()
+    {
+        var agentCount = _infiltrationManager.SecurityAgents.Count;
+        var alertedCount = _infiltrationManager.SecurityAgents.Count(a => a.AwarenessStage > SecurityAwarenessStage.Passive);
+        var activeOpCount = _infiltrationManager.State.ActiveOperations.Count(op => op.Status == OperationStatus.Running);
+        return $"Security :: Alert {_infiltrationManager.State.AlertStage} :: Agents {agentCount} ({alertedCount} alerted) :: Ops {activeOpCount} active";
     }
 
     private string BuildFieldSecuritySummary()
@@ -1610,10 +1789,59 @@ public partial class BattleScene : Control
         _targetApBar.Value = actor?.CurrentAp ?? 0;
     }
 
+    private void UpdateSecuritySection()
+    {
+        _securitySectionLabel.Clear();
+
+        var agents = _infiltrationManager.SecurityAgents;
+        if (agents.Count == 0)
+        {
+            _securitySectionLabel.AppendText("[color=#8b949e]Agents: none[/color]\n");
+        }
+        else
+        {
+            _securitySectionLabel.AppendText("[color=#f2cc60]Agents[/color]\n");
+            foreach (var agent in agents)
+            {
+                var badge = GetAgentTypeBadge(agent.AgentType);
+                var awareness = agent.AwarenessStage;
+                var awarenessColor = awareness switch
+                {
+                    SecurityAwarenessStage.Passive => "#7ee787",
+                    SecurityAwarenessStage.Suspicious => "#f2cc60",
+                    SecurityAwarenessStage.ActiveScan => "#ffa657",
+                    SecurityAwarenessStage.Quarantine or SecurityAwarenessStage.Purge => "#ff7b72",
+                    _ => "#c9d1d9"
+                };
+                _securitySectionLabel.AppendText($"[color={awarenessColor}]{badge} {agent.DisplayName} [{awareness}] @ {agent.CurrentNodePath}[/color]\n");
+            }
+        }
+
+        var activeOps = _infiltrationManager.State.ActiveOperations
+            .Where(op => op.Status is OperationStatus.Running or OperationStatus.Queued)
+            .ToList();
+
+        if (activeOps.Count == 0)
+        {
+            _securitySectionLabel.AppendText("[color=#8b949e]Operations: none[/color]\n");
+        }
+        else
+        {
+            _securitySectionLabel.AppendText("[color=#58a6ff]Operations[/color]\n");
+            foreach (var op in activeOps)
+            {
+                var percent = (int)(op.Progress * 100f);
+                _securitySectionLabel.AppendText($"[color=#c9d1d9]{op.Type} :: {op.TargetNodePath} :: {percent}% :: {op.Status}[/color]\n");
+            }
+        }
+    }
+
     private void UpdateActionButtons()
     {
         var node = GetSelectedNode();
         var actor = node != null ? _nodeActors.GetValueOrDefault(node.Path) : null;
+        var btnCursor = _infiltrationManager.State.CursorAgent;
+        var btnClipboardItemCount = _infiltrationManager.State.Clipboard.Count;
 
         foreach (var pair in _actionButtons)
         {
@@ -1621,11 +1849,10 @@ public partial class BattleScene : Control
             if (action == null)
                 continue;
 
-            var previewContext = new ActionContext(_battleManager.Player)
+            var previewContext = new ActionContext(btnCursor.ActionPoints, btnClipboardItemCount)
             {
                 Target = actor,
                 TargetNode = node,
-                Clipboard = _battleManager.Clipboard,
                 StatusEffects = _battleManager.StatusEffects,
                 AllActors = _battleManager.Enemies
             };
@@ -1633,7 +1860,7 @@ public partial class BattleScene : Control
             var canExecute = node != null
                 && actor != null
                 && actor.IsAlive
-                && _battleManager.CurrentState == BattleState.PlayerTurn
+                && _infiltrationManager.State.RunStatus == RunStatus.Active
                 && action.CanExecute(previewContext);
 
             pair.Value.Disabled = !canExecute;
@@ -1646,7 +1873,7 @@ public partial class BattleScene : Control
     private void UpdateOperationLog()
     {
         _operationLogLabel.Clear();
-        foreach (var log in _battleManager.BattleLog.TakeLast(BattleConstants.UIBattleLogDisplayLines))
+        foreach (var log in _infiltrationManager.State.EventLog.TakeLast(BattleConstants.UIBattleLogDisplayLines))
         {
             _operationLogLabel.AppendText($"[color=#c9d1d9]{log}[/color]\n");
         }
@@ -1679,11 +1906,13 @@ public partial class BattleScene : Control
             }
         }
 
-        _moveCursorButton.Disabled = _battleManager.IsBattleEnd || GetSelectedNode() == null;
-        _clipboardWindowButton.Disabled = _battleManager.IsBattleEnd;
-        _tempWindowButton.Disabled = _battleManager.IsBattleEnd;
-        _executeQueueButton.Disabled = queue.Count == 0 || _battleManager.IsBattleEnd;
-        var canExtract = !_battleManager.IsBattleEnd && IsAtExtractionPoint()
+        var isRunEnded = _infiltrationManager.State.RunStatus != RunStatus.Active;
+        _moveCursorButton.Disabled = isRunEnded || GetSelectedNode() == null;
+        _clipboardWindowButton.Disabled = isRunEnded;
+        _tempWindowButton.Disabled = isRunEnded;
+        _logWindowButton.Disabled = isRunEnded;
+        _executeQueueButton.Disabled = queue.Count == 0 || isRunEnded;
+        var canExtract = !isRunEnded && IsAtExtractionPoint()
             && (_missionProgress.ObjectiveCompleted || _currentMission.ObjectiveType == MissionObjectiveType.Escape);
         _extractButton.Disabled = !canExtract;
         _clearQueueButton.Disabled = queue.Count == 0;
@@ -1789,7 +2018,7 @@ public partial class BattleScene : Control
 
         _tempWindowButton.Text = tempWindow?.IsOpen == true ? "Temp *" : "Temp";
         _tempWindow.Visible = tempWindow?.IsOpen == true;
-        _tempWindowItemsLabel.Clear();
+        _tempWindowItemList.Clear();
         _tempWindowStatusLabel.Text = "Temp window offline";
 
         if (tempWindow == null || !tempWindow.IsOpen)
@@ -1797,20 +2026,19 @@ public partial class BattleScene : Control
             return;
         }
 
-        _tempWindowStatusLabel.Text = $"Focus: {(tempWindow.IsFocused ? "Active" : "Standby")} 쨌 Bound: {tempWindow.BoundPath}";
+        _tempWindowStatusLabel.Text = $"Focus: {(tempWindow.IsFocused ? "Active" : "Standby")} 쨌 Bound: {tempWindow.BoundPath} 쨌 클릭으로 노드 선택";
 
         var boundContainer = _dungeon.GetNode(tempWindow.BoundPath) as ContainerNode;
         if (boundContainer == null)
         {
-            _tempWindowItemsLabel.AppendText($"[color=#8b949e](bound path not a container: {tempWindow.BoundPath})[/color]\n");
+            _tempWindowItemList.AddItem($"(bound path not a container: {tempWindow.BoundPath})");
             return;
         }
 
-        _tempWindowItemsLabel.AppendText($"[color=#f2cc60]{boundContainer.Path}[/color]\n");
         var children = boundContainer.Children.Where(child => !_dungeon.IsCleared(child.Path)).ToList();
         if (children.Count == 0)
         {
-            _tempWindowItemsLabel.AppendText("[color=#8b949e](empty)[/color]\n");
+            _tempWindowItemList.AddItem("(empty)");
             return;
         }
 
@@ -1819,9 +2047,23 @@ public partial class BattleScene : Control
             var agents = GetAgentsForNode(child.Path);
             var monitored = _infiltrationManager.IsNodeMonitored(child.Path);
             var badges = BuildCompactBadgeSummary(child.Path, agents.Count > 0 || monitored);
-            var badgePart = string.IsNullOrWhiteSpace(badges) ? string.Empty : $" 쨌 {badges}";
-            _tempWindowItemsLabel.AppendText($"[color=#c9d1d9]- {child.UiTypeName} :: {child.Name}{badgePart}[/color]\n");
+            var badgePart = string.IsNullOrWhiteSpace(badges) ? string.Empty : $" | {badges}";
+            var idx = _tempWindowItemList.AddItem($"{child.UiTypeName} :: {child.Name}{badgePart}");
+            _tempWindowItemList.SetItemMetadata(idx, child.Path);
+            if (string.Equals(_selectedNodePath, child.Path, StringComparison.OrdinalIgnoreCase))
+                _tempWindowItemList.Select(idx);
         }
+    }
+
+    private void OnTempWindowItemSelected(long index)
+    {
+        var path = _tempWindowItemList.GetItemMetadata((int)index).AsString();
+        if (string.IsNullOrWhiteSpace(path))
+            return;
+
+        _selectedNodePath = path;
+        AppendConsoleFeed($"target locked :: {_dungeon.GetNode(path)?.Name ?? path} :: {path}");
+        UpdateUi();
     }
 
     private void ToggleTempWindow()
@@ -1856,6 +2098,133 @@ public partial class BattleScene : Control
         _infiltrationManager.CloseWindow(existing.WindowId);
         AppendConsoleFeed("window close :: temp");
         UpdateUi();
+    }
+
+    private void ToggleLogWindow()
+    {
+        var existing = _infiltrationManager.State.Windows
+            .FirstOrDefault(window => window.WindowType == ExplorerWindowType.LogViewer);
+
+        if (existing?.IsOpen == true)
+        {
+            _infiltrationManager.CloseLogViewerWindow();
+            AppendConsoleFeed("window close :: log viewer");
+            UpdateUi();
+            return;
+        }
+
+        _infiltrationManager.OpenLogViewerWindow();
+        _selectedLogEntryIndex = _infiltrationManager.State.EventLog.Count - 1;
+        AppendConsoleFeed("window open :: log viewer");
+        UpdateUi();
+    }
+
+    private void CloseLogWindow()
+    {
+        _infiltrationManager.CloseLogViewerWindow();
+        AppendConsoleFeed("window close :: log viewer");
+        UpdateUi();
+    }
+
+    private void OnLogWindowItemSelected(long index)
+    {
+        _selectedLogEntryIndex = (int)index;
+        UpdateLogWindowForgeButton();
+    }
+
+    private void UpdateLogWindowUi()
+    {
+        var logWindow = _infiltrationManager.State.Windows
+            .FirstOrDefault(window => window.WindowType == ExplorerWindowType.LogViewer);
+
+        _logWindowButton.Text = logWindow?.IsOpen == true ? "Log *" : "Log";
+        _logWindow.Visible = logWindow?.IsOpen == true;
+        _logWindowItemList.Clear();
+        _logWindowStatusLabel.Text = "Log window offline";
+        _logWindowForgeButton.Disabled = true;
+
+        if (logWindow == null || !logWindow.IsOpen)
+            return;
+
+        var entries = _infiltrationManager.State.EventLog;
+        _logWindowStatusLabel.Text = $"Focus: {(logWindow.IsFocused ? "Active" : "Standby")} | Entries: {entries.Count}";
+
+        foreach (var entry in entries)
+        {
+            var path = ExtractPathFromLogEntry(entry);
+            var itemIndex = _logWindowItemList.AddItem(entry);
+            _logWindowItemList.SetItemMetadata(itemIndex, path ?? string.Empty);
+            if (!string.IsNullOrWhiteSpace(path))
+            {
+                _logWindowItemList.SetItemCustomFgColor(itemIndex, new Color(0.49f, 0.76f, 1.0f));
+            }
+        }
+
+        var count = _logWindowItemList.ItemCount;
+        if (_selectedLogEntryIndex >= 0 && _selectedLogEntryIndex < count)
+        {
+            _logWindowItemList.Select(_selectedLogEntryIndex);
+            _logWindowItemList.EnsureCurrentIsVisible();
+        }
+        else if (count > 0)
+        {
+            _selectedLogEntryIndex = count - 1;
+            _logWindowItemList.Select(_selectedLogEntryIndex);
+            _logWindowItemList.EnsureCurrentIsVisible();
+        }
+
+        UpdateLogWindowForgeButton();
+    }
+
+    private void UpdateLogWindowForgeButton()
+    {
+        var selected = _logWindowItemList.GetSelectedItems();
+        if (selected.Length == 0 || _infiltrationManager.State.RunStatus != RunStatus.Active)
+        {
+            _logWindowForgeButton.Disabled = true;
+            return;
+        }
+
+        var path = _logWindowItemList.GetItemMetadata(selected[0]).AsString();
+        var nodeExists = !string.IsNullOrWhiteSpace(path) && _dungeon.GetNode(path) != null;
+        _logWindowForgeButton.Disabled = !nodeExists;
+    }
+
+    private void QueueLogForgeFromLogWindow()
+    {
+        var selected = _logWindowItemList.GetSelectedItems();
+        if (selected.Length == 0)
+            return;
+
+        var path = _logWindowItemList.GetItemMetadata(selected[0]).AsString();
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            AppendConsoleFeed("logforge :: no path in selected entry");
+            return;
+        }
+
+        var node = _dungeon.GetNode(path);
+        if (node == null)
+        {
+            AppendConsoleFeed($"logforge :: node not found :: {path}");
+            return;
+        }
+
+        QueueOperationCommand(OperationType.RewriteLog, path, null, $"LOGFORGE -> {node.Name}");
+    }
+
+    private static string? ExtractPathFromLogEntry(string logEntry)
+    {
+        int idx = logEntry.IndexOf("res://", StringComparison.OrdinalIgnoreCase);
+        if (idx < 0)
+            idx = logEntry.IndexOf("root/", StringComparison.OrdinalIgnoreCase);
+        if (idx < 0) return null;
+        var end = idx;
+        while (end < logEntry.Length && logEntry[end] != ' ' && logEntry[end] != '\t'
+               && logEntry[end] != '\n' && logEntry[end] != '(' && logEntry[end] != ':')
+            end++;
+        var path = logEntry[idx..end].TrimEnd('/', ')', ',', '.', ';');
+        return string.IsNullOrWhiteSpace(path) ? null : path;
     }
 
     private void StoreSelectedClipboardEntryInPouch()
@@ -1909,15 +2278,17 @@ public partial class BattleScene : Control
             return;
         }
 
+        var hintCursor = _infiltrationManager.State.CursorAgent;
         _consoleHintLabel.Text = node == null
             ? "Select node -> queue command / drag to folder/archive"
-            : $"Select node -> queue command / drag :: {node.Name} :: AP {_battleManager.Player.CurrentAp}/{_battleManager.Player.MaxAp} :: objective {(_missionProgress.ObjectiveCompleted ? "done" : "pending")}";
+            : $"Select node -> queue command / drag :: {node.Name} :: AP {hintCursor.ActionPoints}/{hintCursor.MaxActionPoints} :: objective {(_missionProgress.ObjectiveCompleted ? "done" : "pending")}";
     }
 
     private void UpdateBattleEndOverlay()
     {
-        _battleEndOverlay.Visible = _battleManager.IsBattleEnd;
-        if (!_battleManager.IsBattleEnd)
+        var isRunEnded = _infiltrationManager.State.RunStatus != RunStatus.Active;
+        _battleEndOverlay.Visible = isRunEnded;
+        if (!isRunEnded)
             return;
 
         var result = _missionResult;
@@ -1925,21 +2296,38 @@ public partial class BattleScene : Control
         _battleEndTitleLabel.Text = didWin ? "Mission Complete" : "Mission Failed";
         _battleEndSummaryLabel.Text = result?.Summary ?? (didWin ? "Extraction completed." : "Operation failed.");
         var turnsUsedStat = result?.TurnsUsed ?? _infiltrationManager.State.TurnCount;
+        var factionRepLine = string.Empty;
+        if (result != null)
+        {
+            var factionRep = CampaignState.GetFactionReputation(result.Mission.Client.FactionId);
+            var repSign = result.ReputationDelta >= 0 ? "+" : "";
+            factionRepLine = $"\n세력: {result.Mission.Client.Faction} ({result.Mission.Client.Name}) 쨌 평판 {repSign}{result.ReputationDelta} → {factionRep}";
+        }
         _battleEndStatsLabel.Text = $"Turns {turnsUsedStat}/{_effectiveTurnLimit} 쨌 Actions {_executedPlayerActions.Count} 쨌 Unique {_executedPlayerActions.Distinct().Count()} 쨌 Cleared {_dungeon.ClearedNodeCount}/{_dungeon.TotalNodeCount}"
-            + (result != null ? $"\nCredits {result.CreditsDelta:+#;-#;0} 쨌 Rep {result.ReputationDelta:+#;-#;0} 쨌 Heat {result.HeatDelta:+#;-#;0}" : string.Empty);
+            + (result != null ? $"\nCredits {result.CreditsDelta:+#;-#;0} 쨌 Rep {result.ReputationDelta:+#;-#;0} 쨌 Heat {result.HeatDelta:+#;-#;0}" : string.Empty)
+            + factionRepLine;
     }
 
     private void OnBattleEnd()
     {
         if (!_missionResolved)
         {
-            var extracted = _infiltrationManager.State.RunStatus == RunStatus.Escaped;
-            _missionResult = _missionProgress.Resolve(_battleManager.IsPlayerAlive, extracted, _infiltrationManager.State.TurnCount, _effectiveTurnLimit);
+            var runStatus = _infiltrationManager.State.RunStatus;
+            var extracted = runStatus == RunStatus.Escaped;
+            _missionResult = _missionProgress.Resolve(_battleManager.IsPlayerAlive, extracted, _infiltrationManager.State.TurnCount, _effectiveTurnLimit, _infiltrationManager.State.Trace);
             CampaignState.ApplyMissionResult(_missionResult);
-            _battleManager.AddLog(_missionResult.Success
+            var finishMessage = runStatus switch
+            {
+                RunStatus.Escaped => "Extraction complete. Package delivered.",
+                RunStatus.TimedOut => $"Trace level critical. Turn limit {_effectiveTurnLimit} exceeded.",
+                RunStatus.Failed => "Operator eliminated. Mission failed.",
+                _ => "Run ended."
+            };
+            _battleManager.FinishBattle(finishMessage);
+            AddOperationLog(_missionResult.Success
                 ? $"Mission complete: {_missionResult.Summary}"
                 : $"Mission failed: {_missionResult.Summary}");
-            _battleManager.AddLog($"Payout: {_missionResult.CreditsDelta:+#;-#;0}c / Rep {_missionResult.ReputationDelta:+#;-#;0} / Heat {_missionResult.HeatDelta:+#;-#;0}");
+            AddOperationLog($"Payout: {_missionResult.CreditsDelta:+#;-#;0}c / Rep {_missionResult.ReputationDelta:+#;-#;0} / Heat {_missionResult.HeatDelta:+#;-#;0}");
             AppendConsoleFeed(_missionResult.Success
                 ? $"mission-complete :: {_missionResult.Summary}"
                 : $"mission-failed :: {_missionResult.Summary}");
@@ -2012,6 +2400,17 @@ public partial class BattleScene : Control
             .Where(agent => string.Equals(agent.CurrentNodePath, nodePath, StringComparison.OrdinalIgnoreCase))
             .ToList();
     }
+
+    private static string GetAgentTypeBadge(SecurityAgentType agentType) => agentType switch
+    {
+        SecurityAgentType.IndexerScout => "[SCOUT]",
+        SecurityAgentType.AiMonitor => "[AI]",
+        SecurityAgentType.GuardScanner => "[GUARD]",
+        SecurityAgentType.FirewallSentinel => "[FW]",
+        SecurityAgentType.AntivirusHeavy => "[AV]",
+        SecurityAgentType.BackupRepairer => "[BKUP]",
+        _ => "[SEC]"
+    };
 
     private Texture2D ResolveNodeIcon(NodeData node)
     {
@@ -2271,6 +2670,11 @@ public partial class BattleScene : Control
         return string.Join("\n", lines);
     }
 
+    private void SyncCursorApToPlayer()
+    {
+        _battleManager.Player.CurrentAp = _infiltrationManager.State.CursorAgent.ActionPoints;
+    }
+
     private bool IsPouchEligible(NodeData node)
     {
         return node.Size <= _infiltrationManager.State.CursorAgent.PouchMaxFileSize;
@@ -2375,6 +2779,12 @@ public partial class BattleScene : Control
         return string.Join(", ", effects.Select(effect => $"{effect.Type} {effect.Duration}T"));
     }
 
+    private void AddOperationLog(string msg)
+    {
+        _battleManager.AddLog(msg);
+        _infiltrationManager.State.AddLog(msg);
+    }
+
     private void AppendConsoleFeed(string text)
     {
         _consoleFeedLabel.AppendText($"[color=#7ee787]{text}[/color]\n");
@@ -2396,6 +2806,7 @@ public partial class BattleScene : Control
         AppendConsoleFeed("mouse-console :: click folder/file, then click command deck");
         AppendConsoleFeed("utility :: SCAN lists visible nodes / STATUS shows turn state / UP returns to parent");
         AppendConsoleFeed("open on folders or archives reveals nested children. Boss type is data-driven, not zip-locked.");
+        AppendConsoleFeed("shortcuts :: Enter=Execute Queue | Del=Delete | Backspace=Navigate Up | F5=Refresh");
 
         if (DebugLog.Enabled)
         {
@@ -2421,6 +2832,7 @@ public partial class BattleScene : Control
             return;
 
         await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+
         _selectedNodePath = BattleConstants.RootBuildCachePath;
         QueueSelectedCommand(ActionIds.Inspect);
         QueueSelectedCommand(ActionIds.Open);
@@ -2428,6 +2840,29 @@ public partial class BattleScene : Control
         _selectedNodePath = BattleConstants.CacheAssetsPath;
         QueueSelectedCommand(ActionIds.Open);
         ExecuteQueuedCommands();
+
+        if (_currentMission.Id == "mission_extract_boss" && _currentMission.ObjectiveType == MissionObjectiveType.Extract)
+        {
+            // Golden path: Copy target → navigate to root → Extract.
+            _selectedNodePath = BattleConstants.BossZipPath;
+            QueueSelectedCommand(ActionIds.Copy);
+            ExecuteQueuedCommands();
+
+            if (_infiltrationManager.State.RunStatus == RunStatus.Active)
+            {
+                LoadContainer(_dungeon.Root, reason: "Smoke test navigating to root for extraction");
+                TryExtractMission();
+
+                var success = _missionResult?.Success ?? false;
+                DebugLog.Info(nameof(BattleScene), $"smoke-test golden-path :: mission={_currentMission.Id} :: success={success} :: summary={_missionResult?.Summary ?? "pending"}");
+                AppendConsoleFeed($"smoke-test :: golden-path :: {(success ? "PASS" : "FAIL")} :: {_missionResult?.Summary ?? "no result"}");
+            }
+            else
+            {
+                DebugLog.Info(nameof(BattleScene), "smoke-test golden-path :: battle ended before extract step");
+                AppendConsoleFeed("smoke-test :: golden-path :: FAIL :: battle ended prematurely");
+            }
+        }
     }
 
     private static bool HasAutomationArg(string arg)

@@ -25,7 +25,7 @@ public class OpenAction : ActionBase
         if (!CanExecute(context))
             return new ActionResult(false, "Cannot execute Open action");
 
-        context.Actor.ConsumeAp(ApCost);
+        context.ConsumeAp(ApCost);
 
         if (context.TargetNode is ContainerNode)
         {

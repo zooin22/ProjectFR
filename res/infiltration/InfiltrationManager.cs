@@ -37,6 +37,8 @@ public sealed class InfiltrationManager
         State.CommandQueue.Clear();
         State.RunStatus = RunStatus.Active;
         State.ObjectiveState = ObjectiveState.Revealed;
+        State.OperatorHp = State.OperatorMaxHp;
+        State.LastTurnContactDamage = 0;
         foreach (var node in knownNodes)
         {
             State.KnownNodePaths.Add(node.Path);
@@ -118,16 +120,36 @@ public sealed class InfiltrationManager
         State.AddLog($"Window closed: {window.Title}");
     }
 
+    public ExplorerWindowState OpenLogViewerWindow()
+    {
+        return OpenWindow(ExplorerWindowType.LogViewer, "Event Log", "system://event-log", traceModifier: 0);
+    }
+
+    public bool CloseLogViewerWindow()
+    {
+        var window = State.Windows.FirstOrDefault(w => w.WindowType == ExplorerWindowType.LogViewer && w.IsOpen);
+        if (window == null) return false;
+        CloseWindow(window.WindowId);
+        return true;
+    }
+
     public void AdvanceTurn()
     {
         State.TurnCount++;
         State.CursorAgent.RestoreActionPoints();
         TickOperations();
+        ApplyMultiWindowParallelOperationTrace();
         TickPermissionOverrides();
         TickTurnDictionary(State.TrackedPathTurns, "Tracked path expired");
         TickTurnDictionary(State.ForcedLockTurns, "Forced lock expired");
         TickTurnDictionary(State.ScanPressureTurns, "Scan pressure expired");
+        var wasDetected = State.CursorAgent.IsDetected;
         AdvanceSecurityAgents();
+        if (!wasDetected && State.CursorAgent.IsDetected)
+        {
+            InterruptMonitoredOperationsOnDetection();
+        }
+        ApplyDetectionContactDamage();
         State.AddLog($"Turn advanced to {State.TurnCount}");
     }
 
@@ -185,6 +207,29 @@ public sealed class InfiltrationManager
         {
             AddTrace(InfiltrationTuning.MonitoredOperationTraceIncrease, $"Monitored operation: {operation.Type} @ {operation.TargetNodePath}");
         }
+    }
+
+    private void ApplyMultiWindowParallelOperationTrace()
+    {
+        var runningPaths = State.ActiveOperations
+            .Where(op => op.Status == OperationStatus.Running)
+            .Select(op => op.TargetNodePath)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        if (runningPaths.Count == 0)
+            return;
+
+        var windowsWithOperation = State.Windows
+            .Count(w => w.IsOpen && runningPaths.Any(path =>
+                path.StartsWith(w.BoundPath.TrimEnd('/'), StringComparison.OrdinalIgnoreCase)));
+
+        var extraWindows = windowsWithOperation - 1;
+        if (extraWindows <= 0)
+            return;
+
+        AddTrace(
+            extraWindows * InfiltrationTuning.MultiWindowParallelOperationTraceCostPerWindow,
+            $"Parallel operations across {windowsWithOperation} windows");
     }
 
     private void TickOperations()
@@ -511,6 +556,31 @@ public sealed class InfiltrationManager
         return true;
     }
 
+    public void SetRunFailed(string reason)
+    {
+        if (State.RunStatus != RunStatus.Active) return;
+        State.RunStatus = RunStatus.Failed;
+        State.AddLog($"Run failed: {reason}");
+    }
+
+    public void SetRunTimedOut()
+    {
+        if (State.RunStatus != RunStatus.Active) return;
+        State.RunStatus = RunStatus.TimedOut;
+        State.AddLog("Run timed out: turn limit reached");
+    }
+
+    public bool TryClearDetection(string reason)
+    {
+        if (!State.CursorAgent.IsDetected)
+            return false;
+        if (State.Trace > InfiltrationTuning.DetectionClearTraceThreshold)
+            return false;
+        State.CursorAgent.IsDetected = false;
+        State.AddLog($"Detection cleared: {reason}");
+        return true;
+    }
+
     private void TickPermissionOverrides()
     {
         foreach (var path in State.PermissionOverrideTurns.Keys.ToList())
@@ -563,11 +633,33 @@ public sealed class InfiltrationManager
             .Select(op => op.TargetNodePath)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
+        var cursorPath = State.CursorAgent.CurrentNodePath;
+        var convergenceActive = State.AlertStage >= SecurityAwarenessStage.Quarantine
+            && !string.IsNullOrWhiteSpace(cursorPath);
+
         foreach (var agent in SecurityAgents)
         {
             if (agent.DisabledTurns > 0)
             {
                 agent.DisabledTurns--;
+                continue;
+            }
+
+            if (convergenceActive)
+            {
+                var cursorIndex = agent.PatrolRoute.FindIndex(p =>
+                    string.Equals(p, cursorPath, StringComparison.OrdinalIgnoreCase));
+                if (cursorIndex >= 0)
+                {
+                    if (agent.PatrolIndex < cursorIndex) agent.PatrolIndex++;
+                    else if (agent.PatrolIndex > cursorIndex) agent.PatrolIndex--;
+                    agent.CurrentNodePath = agent.PatrolRoute[agent.PatrolIndex];
+                }
+                else
+                {
+                    agent.CurrentNodePath = cursorPath;
+                }
+                agent.AwarenessStage = State.AlertStage;
                 continue;
             }
 
@@ -587,6 +679,44 @@ public sealed class InfiltrationManager
                 agent.CurrentNodePath = agent.PatrolRoute[agent.PatrolIndex];
                 agent.AwarenessStage = State.AlertStage;
             }
+        }
+
+        if (!State.CursorAgent.IsDetected && SecurityAgents.Any(agent =>
+                agent.IsAlerted &&
+                string.Equals(agent.CurrentNodePath, State.CursorAgent.CurrentNodePath, StringComparison.OrdinalIgnoreCase)))
+        {
+            State.CursorAgent.IsDetected = true;
+            State.AddLog($"Cursor agent detected at {State.CursorAgent.CurrentNodePath}");
+        }
+    }
+
+    private void ApplyDetectionContactDamage()
+    {
+        State.LastTurnContactDamage = 0;
+        if (!State.CursorAgent.IsDetected)
+            return;
+
+        var cursorPath = State.CursorAgent.CurrentNodePath;
+        var threateningCount = SecurityAgents.Count(a =>
+            a.AgentType is SecurityAgentType.GuardScanner or SecurityAgentType.AntivirusHeavy
+            && string.Equals(a.CurrentNodePath, cursorPath, StringComparison.OrdinalIgnoreCase));
+
+        if (threateningCount == 0)
+            return;
+
+        var damage = InfiltrationTuning.DetectionContactDamage * threateningCount;
+        State.TakeOperatorDamage(damage);
+        State.LastTurnContactDamage = damage;
+    }
+
+    private void InterruptMonitoredOperationsOnDetection()
+    {
+        foreach (var operation in State.ActiveOperations
+            .Where(op => op.Status == OperationStatus.Running && IsNodeMonitored(op.TargetNodePath))
+            .ToList())
+        {
+            operation.Fail();
+            State.AddLog($"Operation interrupted by detection: {operation.Type} @ {operation.TargetNodePath}");
         }
     }
 
@@ -620,9 +750,52 @@ public sealed class InfiltrationManager
 
     private void OnOperationCompleted(FileOperation operation)
     {
-        if (operation.Type == OperationType.MoveCursor)
+        switch (operation.Type)
         {
-            MoveCursor(operation.TargetNodePath);
+            case OperationType.MoveCursor:
+                MoveCursor(operation.TargetNodePath);
+                break;
+            case OperationType.Copy:
+            {
+                var ok = TryCopyToClipboard(operation.TargetNodePath, operation.NodeKind, operation.NodeSize);
+                operation.CompletionNotes.Add(ok ? "copy complete" : "copy blocked :: clipboard full");
+                break;
+            }
+            case OperationType.Cut:
+            {
+                var ok = TryCopyToClipboard(operation.TargetNodePath, operation.NodeKind, operation.NodeSize);
+                operation.CompletionNotes.Add(ok ? "cut clipboard synced" : "cut blocked :: clipboard full");
+                break;
+            }
+            case OperationType.Paste:
+            {
+                var pasted = State.Clipboard.FirstOrDefault(e =>
+                    string.Equals(e.NodePath, operation.TargetNodePath, StringComparison.OrdinalIgnoreCase));
+                if (pasted != null)
+                {
+                    State.Clipboard.Remove(pasted);
+                    operation.CompletionNotes.Add("paste complete :: clipboard cleared");
+                }
+                break;
+            }
+            case OperationType.RewriteLog:
+            {
+                ReduceTrace(InfiltrationTuning.RewriteLogTraceReduction, $"Log rewritten at {operation.TargetNodePath}");
+                var cleared = new List<string>();
+                if (ClearTrackedPath(operation.TargetNodePath, "Rewrite Log scrubbed node route"))
+                    cleared.Add("tracked");
+                if (ClearTrackedPath(State.CurrentFolderPath, "Rewrite Log scrubbed current folder route"))
+                    cleared.Add("folder-tracked");
+                if (ClearScanPressure(operation.TargetNodePath, "Rewrite Log diffused node scan pressure"))
+                    cleared.Add("pressure");
+                if (ClearScanPressure(State.CurrentFolderPath, "Rewrite Log diffused folder scan pressure"))
+                    cleared.Add("folder-pressure");
+                if (cleared.Count > 0)
+                    operation.CompletionNotes.Add($"log scrub :: cleared {string.Join(", ", cleared)}");
+                if (TryClearDetection($"Rewrite log completed at {operation.TargetNodePath}"))
+                    operation.CompletionNotes.Add("detection cleared :: log rewritten");
+                break;
+            }
         }
     }
 
@@ -700,6 +873,8 @@ public sealed class InfiltrationManager
                 SecurityAgentType.IndexerScout => SecurityBehaviorKeys.CursorCrossedIndexerScout,
                 SecurityAgentType.AiMonitor => SecurityBehaviorKeys.CursorCrossedAiMonitor,
                 SecurityAgentType.FirewallSentinel => SecurityBehaviorKeys.CursorCrossedFirewallSentinel,
+                SecurityAgentType.AntivirusHeavy => SecurityBehaviorKeys.CursorCrossedAntivirusHeavy,
+                SecurityAgentType.BackupRepairer => SecurityBehaviorKeys.CursorCrossedBackupRepairer,
                 _ => behaviorKey
             },
             SecurityBehaviorKeys.FolderNavigation => agentType switch
@@ -708,12 +883,16 @@ public sealed class InfiltrationManager
                 SecurityAgentType.IndexerScout => SecurityBehaviorKeys.FolderNavigationIndexerScout,
                 SecurityAgentType.AiMonitor => SecurityBehaviorKeys.FolderNavigationAiMonitor,
                 SecurityAgentType.FirewallSentinel => SecurityBehaviorKeys.FolderNavigationFirewallSentinel,
+                SecurityAgentType.AntivirusHeavy => SecurityBehaviorKeys.FolderNavigationAntivirusHeavy,
+                SecurityAgentType.BackupRepairer => SecurityBehaviorKeys.FolderNavigationBackupRepairer,
                 _ => behaviorKey
             },
             SecurityBehaviorKeys.SearchSweep => agentType switch
             {
                 SecurityAgentType.IndexerScout => SecurityBehaviorKeys.SearchSweepIndexerScout,
                 SecurityAgentType.AiMonitor => SecurityBehaviorKeys.SearchSweepAiMonitor,
+                SecurityAgentType.AntivirusHeavy => SecurityBehaviorKeys.SearchSweepAntivirusHeavy,
+                SecurityAgentType.BackupRepairer => SecurityBehaviorKeys.SearchSweepBackupRepairer,
                 _ => behaviorKey
             },
             _ => behaviorKey

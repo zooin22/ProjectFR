@@ -8,12 +8,12 @@ Practical rules for keeping this repo's documentation accurate and navigable wit
 
 | File | Owns | Update when |
 |------|------|-------------|
-| `GAME_CONCEPT.md` | Core vision, systems direction, play feel | Core design changes (not every iteration) |
-| `STORY_WORLD.md` | World, themes, narrative structure | Story or faction premise changes |
-| `MISSION_FACTIONS.md` | Client factions, mission tone, relationship axes | Faction roster or mission structure changes |
-| `PROJECT_REDESIGN_STEPS.md` | Step-by-step pivot log (battle → infiltration) | After completing or abandoning a step |
-| `MULTI_WINDOW_EXPANSION.md` | Multi-window system design | When window types, state, or scope change |
-| `MISSION_DATA_MODEL.md` | Mission code/design mapping, gap analysis, evolution plan | When mission data model or faction wiring changes |
+| `기획서/GAME_CONCEPT.md` | Core vision, systems direction, play feel | Core design changes (not every iteration) |
+| `기획서/STORY_WORLD.md` | World, themes, narrative structure | Story or faction premise changes |
+| `기획서/MISSION_FACTIONS.md` | Client factions, mission tone, relationship axes | Faction roster or mission structure changes |
+| `기획서/PROJECT_REDESIGN_STEPS.md` | Step-by-step pivot log (battle → infiltration) | After completing or abandoning a step |
+| `기획서/MULTI_WINDOW_EXPANSION.md` | Multi-window system design | When window types, state, or scope change |
+| `기획서/MISSION_DATA_MODEL.md` | Mission code/design mapping, gap analysis, evolution plan | When mission data model or faction wiring changes |
 
 `docs/README.md` is the index. Add a new doc there immediately after creating it.
 

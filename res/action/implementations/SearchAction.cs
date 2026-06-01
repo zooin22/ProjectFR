@@ -24,7 +24,7 @@ public class SearchAction : ActionBase
         if (!CanExecute(context))
             return new ActionResult(false, "Cannot search");
 
-        context.Actor.ConsumeAp(ApCost);
+        context.ConsumeAp(ApCost);
         return new ActionResult(true, $"Search indexed around {context.TargetNode?.Name}");
     }
 }

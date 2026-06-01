@@ -26,7 +26,7 @@ public class CopyAction : ActionBase
         if (context.Clipboard == null)
             return new ActionResult(false, "Clipboard unavailable");
 
-        context.Actor.ConsumeAp(ApCost);
+        context.ConsumeAp(ApCost);
         context.Clipboard.Copy(context.TargetNode);
         return new ActionResult(true, $"Copied {context.TargetNode.Name} to clipboard");
     }

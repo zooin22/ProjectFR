@@ -30,7 +30,7 @@ public class CompressAction : ActionBase
         if (context.StatusEffects == null)
             return new ActionResult(false, "Status effects system not available");
 
-        context.Actor.ConsumeAp(ApCost);
+        context.ConsumeAp(ApCost);
 
         context.StatusEffects.AddEffect(
             context.Target.Id,

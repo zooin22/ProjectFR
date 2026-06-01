@@ -5,7 +5,8 @@ public enum RunStatus
     Active,
     ObjectiveCompleted,
     Escaped,
-    Failed
+    Failed,
+    TimedOut
 }
 
 public enum ObjectiveState

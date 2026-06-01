@@ -24,7 +24,7 @@ public class ShowHiddenAction : ActionBase
         if (!CanExecute(context))
             return new ActionResult(false, "Cannot show hidden");
 
-        context.Actor.ConsumeAp(ApCost);
+        context.ConsumeAp(ApCost);
         return new ActionResult(true, $"Show Hidden probed {context.TargetNode?.Name}");
     }
 }

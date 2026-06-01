@@ -61,7 +61,8 @@ public static class MissionBoardFactory
                 rewardCredits: 65,
                 rewardReputation: 1,
                 failurePenaltyCredits: 20,
-                failureHeat: 1),
+                failureHeat: 1,
+                conflictGroup: "readme_conflict"),
             new(
                 id: "mission_scan_cache",
                 title: "Cache Recon",
@@ -85,7 +86,8 @@ public static class MissionBoardFactory
                 rewardCredits: 60,
                 rewardReputation: 2,
                 failurePenaltyCredits: 15,
-                failureHeat: 1),
+                failureHeat: 1,
+                conflictGroup: "readme_conflict"),
             new(
                 id: "mission_delete_boss",
                 title: "Burn Notice",
@@ -98,7 +100,32 @@ public static class MissionBoardFactory
                 rewardReputation: 1,
                 failurePenaltyCredits: 30,
                 failureHeat: 3,
-                prerequisiteMissionId: "mission_extract_boss"),
+                prerequisiteMissionId: "mission_extract_boss",
+                requiredFactionReputation: 2),
+            new(
+                id: "mission_modify_syslog",
+                title: "Audit Wash",
+                client: northlineLegal,
+                briefing: "Forge the system.log before an automated compliance sweep captures the incriminating entries.",
+                objectiveType: MissionObjectiveType.Modify,
+                targetPath: BattleConstants.SystemLogPath,
+                turnLimit: 8,
+                rewardCredits: 75,
+                rewardReputation: 2,
+                failurePenaltyCredits: 20,
+                failureHeat: 2),
+            new(
+                id: "mission_escape_only",
+                title: "Clean Exfil",
+                client: helixOps,
+                briefing: "No package retrieval — just map the system and extract without triggering an alert cascade.",
+                objectiveType: MissionObjectiveType.Escape,
+                targetPath: string.Empty,
+                turnLimit: 7,
+                rewardCredits: 50,
+                rewardReputation: 1,
+                failurePenaltyCredits: 10,
+                failureHeat: 1),
         };
     }
 }

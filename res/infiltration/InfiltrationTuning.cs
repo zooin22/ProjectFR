@@ -21,4 +21,16 @@ public static class InfiltrationTuning
     public const int RewriteLogTraceReduction = 8;
     public const int MoveTraceIncrease = 4;
     public const int ArchiveTraceReduction = 2;
+
+    public const int MultiWindowParallelOperationTraceCostPerWindow = 1;
+
+    public const int TracePerHeatPoint = 10;
+    public const int DetectionClearTraceThreshold = 40;
+
+    public const int StunDurationTurns = 2;
+
+    public const int DetectionContactDamage = 3;
+    public const int OperatorMaxHp = 30;
+
+    public const int BackupRepairTraceIncrease = 5;
 }

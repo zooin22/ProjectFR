@@ -24,7 +24,7 @@ public class CleanAction : ActionBase
         if (!CanExecute(context))
             return new ActionResult(false, "Cannot execute Clean action");
 
-        context.Actor.ConsumeAp(ApCost);
+        context.ConsumeAp(ApCost);
         int damage = ActionConstants.CleanDamage;
 
         if (context.AllActors != null)
@@ -32,16 +32,13 @@ public class CleanAction : ActionBase
             int totalDamage = 0;
             foreach (var actor in context.AllActors)
             {
-                if (actor != context.Actor)
-                {
-                    actor.TakeDamage(damage);
-                    totalDamage += damage;
-                }
+                actor.TakeDamage(damage);
+                totalDamage += damage;
             }
 
-            if (context.StatusEffects != null)
+            if (context.StatusEffects != null && context.ActorId != null)
             {
-                context.StatusEffects.ClearEffects(context.Actor.Id);
+                context.StatusEffects.ClearEffects(context.ActorId);
             }
 
             return new ActionResult(true, $"Cleaned area dealing {totalDamage} damage and removing own status effects", totalDamage);

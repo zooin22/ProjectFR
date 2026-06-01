@@ -39,7 +39,7 @@ public class PasteAction : ActionBase
         if (pastedNode == null)
             return new ActionResult(false, "Nothing to paste");
 
-        context.Actor.ConsumeAp(ApCost);
+        context.ConsumeAp(ApCost);
 
         return pastedNode switch
         {

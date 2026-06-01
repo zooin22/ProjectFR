@@ -13,6 +13,7 @@ public partial class MainMenu : Control
 	private Label _operatorStatusLabel = null!;
 	private Label _lastRunLabel = null!;
 	private Button _startButton = null!;
+	private Button _newGameButton = null!;
 	private bool _transitioning;
 
 	public override void _Ready()
@@ -28,6 +29,7 @@ public partial class MainMenu : Control
 			_startButton = startButton;
 			var previousMissionButton = GetNode<Button>("RootMargin/MainVBox/HeroPanel/HeroMargin/HeroVBox/PrimaryButtonRow/PreviousMissionButton");
 			var nextMissionButton = GetNode<Button>("RootMargin/MainVBox/HeroPanel/HeroMargin/HeroVBox/PrimaryButtonRow/NextMissionButton");
+			_newGameButton = GetNode<Button>("RootMargin/MainVBox/HeroPanel/HeroMargin/HeroVBox/PrimaryButtonRow/NewGameButton");
 
 			_descriptionLabel = GetNode<Label>("RootMargin/MainVBox/HeroPanel/HeroMargin/HeroVBox/DescriptionLabel");
 			_missionTitleLabel = GetNode<Label>("RootMargin/MainVBox/InfoRow/MissionPanel/MissionMargin/MissionVBox/MissionTitleValueLabel");
@@ -39,6 +41,7 @@ public partial class MainMenu : Control
 			startButton.Pressed += OnStartBattlePressed;
 			previousMissionButton.Pressed += OnPreviousMissionPressed;
 			nextMissionButton.Pressed += OnNextMissionPressed;
+			_newGameButton.Pressed += OnNewGamePressed;
 
 			RefreshMenu();
 			DebugLog.Info(nameof(MainMenu), $"menu ready :: selected mission = {CampaignState.GetSelectedMission().Id}");
@@ -62,7 +65,9 @@ public partial class MainMenu : Control
 		var modifiers = CampaignState.GetModifiers();
 		var effectiveTurnLimit = Math.Max(3, mission.TurnLimit - modifiers.HeatTurnPenalty);
 		_descriptionLabel.Text = "작전 로비에서 의뢰를 검토하고, 보상·위험도를 확인한 뒤 실제 폴더 던전 침투를 시작한다.";
-		_missionTitleLabel.Text = $"{mission.Title} · {mission.Client.Name}";
+		_missionTitleLabel.Text = CampaignState.IsMissionCompleted(mission.Id)
+			? $"(완료) {mission.Title} · {mission.Client.Name}"
+			: $"{mission.Title} · {mission.Client.Name}";
 
 		var briefing = $"세력: {mission.Client.Faction}\n브리핑: {mission.Briefing}\n\n목표: {mission.ObjectiveType} {mission.TargetPath}\n기본 제한 턴: {mission.TurnLimit} / 현재 제한 턴: {effectiveTurnLimit}\n의뢰 성향: {mission.Client.Agenda}\n리스크: {mission.Client.RiskNote}";
 		var conflictNote = BuildConflictNote(mission);
@@ -96,6 +101,15 @@ public partial class MainMenu : Control
 		RefreshMenu();
 	}
 
+	private void OnNewGamePressed()
+	{
+		CampaignState.Reset();
+		_transitioning = false;
+		_startButton.Disabled = false;
+		DebugLog.Info(nameof(MainMenu), "new game -> campaign state reset");
+		RefreshMenu();
+	}
+
 	private void OnStartBattlePressed()
 	{
 		if (_transitioning) return;
@@ -114,11 +128,11 @@ public partial class MainMenu : Control
 
 	private static string BuildConflictNote(MissionData mission)
 	{
+		if (mission.ConflictGroup is null)
+			return string.Empty;
+
 		var conflicts = CampaignState.MissionBoard
-			.Where(m => m.Id != mission.Id
-				&& m.TargetPath == mission.TargetPath
-				&& m.Client.FactionId != mission.Client.FactionId
-				&& m.ObjectiveType != mission.ObjectiveType)
+			.Where(m => m.Id != mission.Id && m.ConflictGroup == mission.ConflictGroup)
 			.ToList();
 
 		if (conflicts.Count == 0)
@@ -130,7 +144,7 @@ public partial class MainMenu : Control
 			return $"  · {c.Title} — {c.Client.Name} ({c.Client.Faction}) [{status}]";
 		});
 
-		return "[충돌] 같은 타깃에 대립하는 의뢰:\n" + string.Join("\n", lines);
+		return "[충돌] 같은 그룹의 대립 의뢰:\n" + string.Join("\n", lines);
 	}
 
 	private static bool HasAutomationArg(string arg)

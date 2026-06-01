@@ -6,6 +6,10 @@ public sealed class InfiltrationState
     public int TurnCount { get; set; }
     public int Trace { get; set; }
     public int MaxTrace { get; set; } = 100;
+    public int OperatorMaxHp { get; set; } = InfiltrationTuning.OperatorMaxHp;
+    public int OperatorHp { get; set; } = InfiltrationTuning.OperatorMaxHp;
+    public bool IsOperatorAlive => OperatorHp > 0;
+    public int LastTurnContactDamage { get; set; }
     public SecurityAwarenessStage AlertStage { get; set; } = SecurityAwarenessStage.Passive;
     public bool ExitUnlocked { get; set; }
     public RunStatus RunStatus { get; set; } = RunStatus.Active;
@@ -23,6 +27,12 @@ public sealed class InfiltrationState
     public List<FileOperation> ActiveOperations { get; } = new();
     public List<CommandQueueEntry> CommandQueue { get; } = new();
     public List<string> EventLog { get; } = new();
+
+    public void TakeOperatorDamage(int amount)
+    {
+        OperatorHp = Math.Max(0, OperatorHp - amount);
+        AddLog($"Operator took {amount} contact damage (HP: {OperatorHp}/{OperatorMaxHp})");
+    }
 
     public void AddLog(string message)
     {

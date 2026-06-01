@@ -12,6 +12,6 @@ public class MinApCondition : IActionCondition
 
     public bool Check(ActionContext context)
     {
-        return context.Actor.CurrentAp >= RequiredAp;
+        return context.CurrentAp >= RequiredAp;
     }
 }

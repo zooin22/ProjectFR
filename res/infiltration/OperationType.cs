@@ -23,5 +23,6 @@ public enum OperationType
     Inject,
     Stun,
     Decoy,
-    PermissionOverride
+    PermissionOverride,
+    Restore
 }
