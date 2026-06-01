@@ -61,7 +61,7 @@
 
 ## QA / Smoke Test
 
-- [ ] `RunSmokeTestIfRequested()`를 Delete/Scan 미션 골든 패스로 확장한다: 현재 `mission_extract_boss` (Extract 타입)만 검증하며 Delete/Scan 타입 미션은 커버되지 않는다 — `mission_delete_readme` 실행 시 `RootReadmePath`에 Delete 큐 → 실행 → `_missionProgress.ObjectiveCompleted == true` 로그를, `mission_scan_cache` 실행 시 `RootBuildCachePath`에 Inspect 큐 → 실행 → 완료 여부를 각각 `DebugLog.Info`로 출력한다.
+- [x] `RunSmokeTestIfRequested()`를 Delete/Scan 미션 골든 패스로 확장한다: 현재 `mission_extract_boss` (Extract 타입)만 검증하며 Delete/Scan 타입 미션은 커버되지 않는다 — `mission_delete_readme` 실행 시 `RootReadmePath`에 Delete 큐 → 실행 → `_missionProgress.ObjectiveCompleted == true` 로그를, `mission_scan_cache` 실행 시 `RootBuildCachePath`에 Inspect 큐 → 실행 → 완료 여부를 각각 `DebugLog.Info`로 출력한다.
 - [x] `RunSmokeTestIfRequested()`를 전체 미션 골든 패스로 확장한다: 현재 Inspect + Open 두 번만 수행하며 Copy·Extract 흐름은 검증되지 않는다 — Extract 타입 미션(`mission_extract_boss`)에 대해 대상 노드 Copy 큐 → 실행 → 루트 이동 → Extract 순서를 자동화해 `_missionResult.Success == true`를 assertions 없이 로그로 확인할 수 있게 한다.
 
 ## GDScript Migration

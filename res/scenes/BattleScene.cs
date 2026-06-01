@@ -2901,6 +2901,32 @@ public partial class BattleScene : Control
                 AppendConsoleFeed("smoke-test :: golden-path :: FAIL :: battle ended prematurely");
             }
         }
+        else if (_currentMission.Id == "mission_delete_readme" && _currentMission.ObjectiveType == MissionObjectiveType.Delete)
+        {
+            // Golden path: Delete target node → check objective completed.
+            if (_infiltrationManager.State.RunStatus == RunStatus.Active)
+            {
+                _selectedNodePath = BattleConstants.RootReadmePath;
+                QueueSelectedCommand(ActionIds.Delete);
+                ExecuteQueuedCommands();
+
+                var completed = _missionProgress.ObjectiveCompleted;
+                DebugLog.Info(nameof(BattleScene), $"smoke-test golden-path :: mission={_currentMission.Id} :: objectiveCompleted={completed}");
+                AppendConsoleFeed($"smoke-test :: golden-path :: {(completed ? "PASS" : "FAIL")} :: delete @ {BattleConstants.RootReadmePath}");
+            }
+            else
+            {
+                DebugLog.Info(nameof(BattleScene), "smoke-test golden-path :: battle ended before delete step");
+                AppendConsoleFeed("smoke-test :: golden-path :: FAIL :: battle ended prematurely");
+            }
+        }
+        else if (_currentMission.Id == "mission_scan_cache" && _currentMission.ObjectiveType == MissionObjectiveType.Scan)
+        {
+            // Golden path: Inspect on RootBuildCachePath already executed in the common sequence above.
+            var completed = _missionProgress.ObjectiveCompleted;
+            DebugLog.Info(nameof(BattleScene), $"smoke-test golden-path :: mission={_currentMission.Id} :: objectiveCompleted={completed}");
+            AppendConsoleFeed($"smoke-test :: golden-path :: {(completed ? "PASS" : "FAIL")} :: scan @ {BattleConstants.RootBuildCachePath}");
+        }
     }
 
     private static bool HasAutomationArg(string arg)
