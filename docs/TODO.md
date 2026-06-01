@@ -69,7 +69,7 @@
 - [x] C# → GDScript 전환 범위 인벤토리를 작성한다: `res/**/*.cs`, `GlobalUsings.cs`, `ProjectFR.csproj`, `global.json`, `.tscn`의 `ExtResource(... .cs)` 참조를 전부 목록화하고, 각 파일을 `core`, `data`, `systems`, `infiltration`, `mission`, `action`, `skills`, `scenes` 모듈로 분류해 변환 순서를 기록한다.
 - [x] GDScript 네이밍/구조 규칙을 정한다: 기존 C# namespace를 Godot autoload, `class_name`, 폴더 경로로 매핑하고 `.gd` 파일명 규칙을 문서화한다.
 - [x] C# 데이터 모델을 먼저 GDScript 클래스로 이식한다: `ActorState`, `NodeData`, `SpecialFileNode`, `TargetType`, `MissionData`, `MissionResult`, `CampaignModifiers`, `ClipboardEntry`, `CommandQueueEntry`, `FileOperation`, `SecurityAgent`를 `.gd` `class_name` 기반으로 변환한다.
-- [ ] `GameManager`와 전역 시스템을 GDScript Autoload로 교체한다: `GameManager.cs`, `DebugLog.cs`, `ClipboardSystem.cs`, `StatusEffectSystem.cs`를 `.gd`로 변환하고 `project.godot` autoload/script class 참조를 갱신한다.
+- [x] `GameManager`와 전역 시스템을 GDScript Autoload로 교체한다: `GameManager.cs`, `DebugLog.cs`, `ClipboardSystem.cs`, `StatusEffectSystem.cs`를 `.gd`로 변환하고 `project.godot` autoload/script class 참조를 갱신한다.
 - [ ] 침투 런타임을 GDScript로 이식한다: `InfiltrationState`, `InfiltrationManager`, tuning, security behavior, run/operation state를 변환하고 Trace/Alert/RunStatus 흐름을 맞춘다.
 - [ ] 액션/스킬 시스템을 GDScript로 이식한다: registry, context, conditions, implementations, skill behavior를 Godot base class 또는 duck typing 패턴으로 변환한다.
 - [ ] 미션/캠페인 시스템을 GDScript로 이식한다: mission board, progress, `user://campaign.json` 저장/로드/Reset/해금/ConflictGroup 로직을 유지한다.
