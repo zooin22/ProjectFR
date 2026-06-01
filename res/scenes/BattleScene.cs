@@ -111,6 +111,7 @@ public partial class BattleScene : Control
     private string? _selectedNodePath;
     private string? _dragSourceNodePath;
     private string? _dragHoverTargetPath;
+    private bool _suppressSelectionEvents;
 
     public override void _Ready()
     {
@@ -1225,11 +1226,17 @@ public partial class BattleScene : Control
 
     private void OnFolderTreeSelected()
     {
+        if (_suppressSelectionEvents)
+            return;
+
         var item = _folderTree.GetSelected();
         if (item == null)
             return;
 
         var path = item.GetMetadata(0).AsString();
+        if (string.Equals(path, _dungeon.CurrentContainer.Path, StringComparison.OrdinalIgnoreCase))
+            return;
+
         if (_dungeon.GetNode(path) is not ContainerNode container)
             return;
 
@@ -1239,6 +1246,9 @@ public partial class BattleScene : Control
 
     private void OnFileTreeSelected()
     {
+        if (_suppressSelectionEvents)
+            return;
+
         var item = _fileTree.GetSelected();
         if (item == null)
             return;
@@ -1264,6 +1274,9 @@ public partial class BattleScene : Control
 
     private void OnExplorerFieldSelected(long index)
     {
+        if (_suppressSelectionEvents)
+            return;
+
         var metadata = _explorerFieldList.GetItemMetadata((int)index);
         _selectedNodePath = metadata.AsString();
         var selectedNode = GetSelectedNode();
@@ -1518,9 +1531,17 @@ public partial class BattleScene : Control
             _consoleHintLabel.Text = $"Dragging :: {_dragSourceNodePath} -> {(_dragHoverTargetPath ?? "(no drop target)")}";
         }
 
-        RebuildFolderTree();
-        RebuildFileTree();
-        RebuildExplorerField();
+        _suppressSelectionEvents = true;
+        try
+        {
+            RebuildFolderTree();
+            RebuildFileTree();
+            RebuildExplorerField();
+        }
+        finally
+        {
+            _suppressSelectionEvents = false;
+        }
         UpdateInspector();
         UpdateSecuritySection();
         UpdateActionButtons();
