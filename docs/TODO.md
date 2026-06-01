@@ -72,7 +72,7 @@
 - [x] `GameManager`와 전역 시스템을 GDScript Autoload로 교체한다: `GameManager.cs`, `DebugLog.cs`, `ClipboardSystem.cs`, `StatusEffectSystem.cs`를 `.gd`로 변환하고 `project.godot` autoload/script class 참조를 갱신한다.
 - [x] 침투 런타임을 GDScript로 이식한다: `InfiltrationState`, `InfiltrationManager`, tuning, security behavior, run/operation state를 변환하고 Trace/Alert/RunStatus 흐름을 맞춘다.
 - [x] 액션/스킬 시스템을 GDScript로 이식한다: registry, context, conditions, implementations, skill behavior를 Godot base class 또는 duck typing 패턴으로 변환한다.
-- [ ] 미션/캠페인 시스템을 GDScript로 이식한다: mission board, progress, `user://campaign.json` 저장/로드/Reset/해금/ConflictGroup 로직을 유지한다.
+- [x] 미션/캠페인 시스템을 GDScript로 이식한다: mission board, progress, `user://campaign.json` 저장/로드/Reset/해금/ConflictGroup 로직을 유지한다.
 - [ ] `BattleFactory`/`BattleDungeon` 등 레거시 battle scaffold를 GDScript로 변환하거나 제거 경로를 확정한다.
 - [ ] 씬 스크립트를 GDScript로 교체한다: `TitleScene`, `MainMenu`, `BattleScene`과 `.tscn` ExtResource를 `.gd`로 전환한다.
 - [ ] C# 빌드 의존성을 제거한다: 모든 `.cs` 참조 제거 후 `.csproj`, `GlobalUsings.cs`, `global.json`, Mono 전용 docs를 제거/보관하고 docs를 GDScript 기준으로 갱신한다.

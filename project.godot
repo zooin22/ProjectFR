@@ -21,6 +21,7 @@ DebugLog="*res://res/core/debug_log.gd"
 ClipboardSystem="*res://res/systems/clipboard_system.gd"
 StatusEffectSystem="*res://res/systems/status_effect_system.gd"
 GameManager="*res://res/core/game_manager.gd"
+CampaignState="*res://res/mission/campaign_state.gd"
 
 [dotnet]
 
