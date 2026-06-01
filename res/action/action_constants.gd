@@ -1,0 +1,38 @@
+class_name ActionConstants
+
+const OPEN_ACTION_AP_COST: int = 1
+const OPEN_FILE_DAMAGE: int = 3
+const OPEN_FOLDER_DAMAGE: int = 1
+
+const INSPECT_ACTION_AP_COST: int = 0
+
+const COPY_ACTION_AP_COST: int = 1
+
+const CUT_ACTION_AP_COST: int = 2
+const CUT_DAMAGE: int = 3
+
+const DELETE_ACTION_AP_COST: int = 2
+const DELETE_DAMAGE: int = 7
+
+const CLEAN_ACTION_AP_COST: int = 3
+const CLEAN_DAMAGE: int = 3
+
+const PASTE_ACTION_AP_COST: int = 2
+const PASTE_FILE_DAMAGE: int = 5
+const PASTE_SPECIAL_FILE_BASE_DAMAGE: int = 8
+const PASTE_SPECIAL_FILE_MULTIPLIER: float = 1.5
+
+const QUARANTINE_ACTION_AP_COST: int = 2
+const QUARANTINE_EFFECT_DURATION: int = 2
+
+const COMPRESS_ACTION_AP_COST: int = 2
+const COMPRESS_EFFECT_DURATION: int = 3
+const COMPRESS_ATTACK_MODIFIER: int = -1
+
+const LOG_FORGE_ACTION_AP_COST: int = 1
+const SEARCH_ACTION_AP_COST: int = 1
+const SHOW_HIDDEN_ACTION_AP_COST: int = 1
+const PERMISSION_OVERRIDE_ACTION_AP_COST: int = 2
+
+const STUN_ACTION_AP_COST: int = 2
+const STUN_DAMAGE: int = 2
