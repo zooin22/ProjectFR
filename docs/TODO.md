@@ -1,6 +1,6 @@
 # ProjectFR TODO
 
-> Updated: 2026-06-01
+> Updated: 2026-06-02
 
 ## Architecture
 
@@ -63,3 +63,17 @@
 
 - [ ] `RunSmokeTestIfRequested()`를 Delete/Scan 미션 골든 패스로 확장한다: 현재 `mission_extract_boss` (Extract 타입)만 검증하며 Delete/Scan 타입 미션은 커버되지 않는다 — `mission_delete_readme` 실행 시 `RootReadmePath`에 Delete 큐 → 실행 → `_missionProgress.ObjectiveCompleted == true` 로그를, `mission_scan_cache` 실행 시 `RootBuildCachePath`에 Inspect 큐 → 실행 → 완료 여부를 각각 `DebugLog.Info`로 출력한다.
 - [x] `RunSmokeTestIfRequested()`를 전체 미션 골든 패스로 확장한다: 현재 Inspect + Open 두 번만 수행하며 Copy·Extract 흐름은 검증되지 않는다 — Extract 타입 미션(`mission_extract_boss`)에 대해 대상 노드 Copy 큐 → 실행 → 루트 이동 → Extract 순서를 자동화해 `_missionResult.Success == true`를 assertions 없이 로그로 확인할 수 있게 한다.
+
+## GDScript Migration
+
+- [ ] C# → GDScript 전환 범위 인벤토리를 작성한다: `res/**/*.cs`, `GlobalUsings.cs`, `ProjectFR.csproj`, `global.json`, `.tscn`의 `ExtResource(... .cs)` 참조를 전부 목록화하고, 각 파일을 `core`, `data`, `systems`, `infiltration`, `mission`, `action`, `skills`, `scenes` 모듈로 분류해 변환 순서를 기록한다.
+- [ ] GDScript 네이밍/구조 규칙을 정한다: 기존 C# namespace를 Godot autoload, `class_name`, 폴더 경로로 매핑하고 `.gd` 파일명 규칙을 문서화한다.
+- [ ] C# 데이터 모델을 먼저 GDScript 클래스로 이식한다: `ActorState`, `NodeData`, `SpecialFileNode`, `TargetType`, `MissionData`, `MissionResult`, `CampaignModifiers`, `ClipboardEntry`, `CommandQueueEntry`, `FileOperation`, `SecurityAgent`를 `.gd` `class_name` 기반으로 변환한다.
+- [ ] `GameManager`와 전역 시스템을 GDScript Autoload로 교체한다: `GameManager.cs`, `DebugLog.cs`, `ClipboardSystem.cs`, `StatusEffectSystem.cs`를 `.gd`로 변환하고 `project.godot` autoload/script class 참조를 갱신한다.
+- [ ] 침투 런타임을 GDScript로 이식한다: `InfiltrationState`, `InfiltrationManager`, tuning, security behavior, run/operation state를 변환하고 Trace/Alert/RunStatus 흐름을 맞춘다.
+- [ ] 액션/스킬 시스템을 GDScript로 이식한다: registry, context, conditions, implementations, skill behavior를 Godot base class 또는 duck typing 패턴으로 변환한다.
+- [ ] 미션/캠페인 시스템을 GDScript로 이식한다: mission board, progress, `user://campaign.json` 저장/로드/Reset/해금/ConflictGroup 로직을 유지한다.
+- [ ] `BattleFactory`/`BattleDungeon` 등 레거시 battle scaffold를 GDScript로 변환하거나 제거 경로를 확정한다.
+- [ ] 씬 스크립트를 GDScript로 교체한다: `TitleScene`, `MainMenu`, `BattleScene`과 `.tscn` ExtResource를 `.gd`로 전환한다.
+- [ ] C# 빌드 의존성을 제거한다: 모든 `.cs` 참조 제거 후 `.csproj`, `GlobalUsings.cs`, `global.json`, Mono 전용 docs를 제거/보관하고 docs를 GDScript 기준으로 갱신한다.
+- [ ] GDScript 전환 검증 루틴을 만든다: Godot CLI/에디터에서 Title → MainMenu → BattleScene 진입, smoke-test menu flow, 미션 시작/큐 실행/추출/실패/로비 복귀를 로그로 확인한다.
