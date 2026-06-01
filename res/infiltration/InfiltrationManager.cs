@@ -511,10 +511,22 @@ public sealed class InfiltrationManager
     {
         var pouchHidden = IsNodeHiddenInPouch(nodePath) && !IsPouchMaskingBroken(nodePath);
         var scanPressure = HasScanPressure(nodePath) || HasScanPressure(State.CurrentFolderPath);
+        var pouchEntrySize = pouchHidden
+            ? State.PouchCache.FirstOrDefault(e => string.Equals(e.NodePath, nodePath, StringComparison.OrdinalIgnoreCase))?.Size ?? 0
+            : 0L;
         return SecurityAgents
             .Where(agent => string.Equals(agent.CurrentNodePath, nodePath, StringComparison.OrdinalIgnoreCase)
                 || IsNodeInSight(agent, nodePath))
-            .Where(agent => scanPressure || !pouchHidden || agent.AgentType is not (SecurityAgentType.IndexerScout or SecurityAgentType.AiMonitor))
+            .Where(agent =>
+            {
+                if (scanPressure || !pouchHidden)
+                    return true;
+                if (agent.AgentType == SecurityAgentType.IndexerScout)
+                    return false;
+                if (agent.AgentType == SecurityAgentType.AiMonitor)
+                    return pouchEntrySize >= InfiltrationTuning.PouchSizeAiMonitorDetectionThreshold;
+                return true;
+            })
             .ToList();
     }
 

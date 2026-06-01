@@ -32,7 +32,7 @@
 
 ## Security / Detection
 
-- [ ] `AiMonitor` 볼주머니 부분 탐지 로직을 구현한다: 위키에서 "`AiMonitor`가 볼주머니 은닉 파일도 일부 감지"라고 명시하지만 `InfiltrationManager.GetMonitoringAgents()`는 `AiMonitor`를 `IndexerScout`와 동일하게 처리해 볼주머니 마스킹이 온전하면 완전 제외한다 — `InfiltrationTuning`에 `PouchSizeAiMonitorDetectionThreshold = 5` 상수를 추가하고, `GetMonitoringAgents()` 필터에서 `AiMonitor`는 파일 크기가 임계값 미만일 때만 제외하도록 `IndexerScout` 분기와 분리한다.
+- [x] `AiMonitor` 볼주머니 부분 탐지 로직을 구현한다: 위키에서 "`AiMonitor`가 볼주머니 은닉 파일도 일부 감지"라고 명시하지만 `InfiltrationManager.GetMonitoringAgents()`는 `AiMonitor`를 `IndexerScout`와 동일하게 처리해 볼주머니 마스킹이 온전하면 완전 제외한다 — `InfiltrationTuning`에 `PouchSizeAiMonitorDetectionThreshold = 5` 상수를 추가하고, `GetMonitoringAgents()` 필터에서 `AiMonitor`는 파일 크기가 임계값 미만일 때만 제외하도록 `IndexerScout` 분기와 분리한다.
 - [x] `CursorAgent.IsDetected` 해제 수단을 추가한다: 현재 탐지 플래그는 런 내 단방향으로 세팅만 되고 지울 수 없다 — `RewriteLog` 완료 또는 `CleanAction` 성공 시 `InfiltrationManager`에서 `CursorAgent.IsDetected = false`로 리셋하고, 가능 조건을 `InfiltrationTuning`에 상수로 정의한다.
 - [x] Quarantine / Purge 경보 단계에서 보안 에이전트가 커서 방향으로 수렴하도록 `AdvanceSecurityAgents()`를 개선한다: 현재 경보 단계는 추적도 임계값 표시에만 쓰이고 에이전트 이동 로직은 `IsAlerted + 활성 오퍼레이션` 조합에만 반응한다 — `AlertStage >= Quarantine`일 때 에이전트가 `CursorAgent.CurrentNodePath` 방향으로 한 칸씩 이동하는 수렴 패턴을 추가한다.
 - [x] 오퍼레이터 HP 감소를 침투 실패 경로로 연결한다: `_battleManager.Player.CurrentHp`가 UI에 표시되지만 어떤 보안 에이전트도 침투 중 HP 피해를 주지 않아 HP 소진 실패 경로가 없다 — GuardScanner 또는 AntivirusHeavy가 탐지(`IsDetected == true`) 상태에서 커서 노드와 같은 위치에 있을 때 `AdvanceSecurityAgents()` 안에서 `_battleManager.Player.TakeDamage()` 호출을 추가하고, `ApplyMissionFailureChecks()`에서 `_battleManager.Player.IsAlive == false` 조건으로 미션을 실패 처리한다.

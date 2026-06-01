@@ -35,4 +35,6 @@ public static class InfiltrationTuning
     public const int BackupRepairTraceIncrease = 5;
 
     public const int SuccessHeatReduction = 1;
+
+    public const int PouchSizeAiMonitorDetectionThreshold = 5;
 }
