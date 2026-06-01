@@ -23,7 +23,7 @@
 
 ## Campaign / Run Loop
 
-- [ ] `CampaignState.TryLoadFromFile()`에 JSON 파싱 실패 시 `.bak` 보전 복구 경로를 추가한다: 현재 `JsonSerializer.Deserialize` 예외 발생 시 `GD.PushWarning`만 출력하고 손상 파일을 그대로 두어 다음 `SaveToFile()` 호출 시 덮어쓸 위험이 있다 — 예외 발생 시 `SaveFilePath`의 내용을 `SaveFilePath + ".bak"`으로 복사한 뒤 빈 상태로 초기화하고, 경고 메시지에 `.bak` 경로를 포함시킨다.
+- [x] `CampaignState.TryLoadFromFile()`에 JSON 파싱 실패 시 `.bak` 보전 복구 경로를 추가한다: 현재 `JsonSerializer.Deserialize` 예외 발생 시 `GD.PushWarning`만 출력하고 손상 파일을 그대로 두어 다음 `SaveToFile()` 호출 시 덮어쓸 위험이 있다 — 예외 발생 시 `SaveFilePath`의 내용을 `SaveFilePath + ".bak"`으로 복사한 뒤 빈 상태로 초기화하고, 경고 메시지에 `.bak` 경로를 포함시킨다.
 - [x] `CampaignState.IsMissionAvailable()`에 conflict-group 뮤텍스를 적용한다: `"readme_conflict"` 그룹의 두 미션("Loose End Cleanup", "Mirror Snatch") 중 하나가 `_completedMissionIds`에 있으면 같은 `ConflictGroup`의 나머지 미션을 잠금 처리한다.
 - [x] 미션 보드에서 이미 완료한 미션을 시각적으로 구분한다: `MainMenu.RefreshMenu()`에서 `_completedMissionIds`를 참조해 미션 제목 옆에 "(완료)" 표시를 추가하거나 선택 비활성화해 재플레이 여부를 명확히 한다.
 - [x] `CampaignState.GetAvailableMissions()`가 빈 리스트를 반환할 때 발생하는 `IndexOutOfRangeException`을 방어한다: 선행 조건·세력 평판 필터 후 가용 미션이 0개면 전체 `_missionBoard`로 폴백해 최소 하나를 반환하도록 `EnsureInitialized()`와 `GetSelectedMission()`에 가드를 추가한다.

@@ -71,7 +71,9 @@ public static class CampaignState
         }
         catch (Exception e)
         {
-            GD.PushWarning($"CampaignState: failed to load campaign.json — {e.Message}");
+            var bakPath = path + ".bak";
+            try { System.IO.File.Copy(path, bakPath, overwrite: true); } catch { }
+            GD.PushWarning($"CampaignState: failed to load campaign.json — {e.Message}. Corrupted file backed up to {bakPath}; starting fresh.");
         }
     }
 
